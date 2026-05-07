@@ -17,6 +17,7 @@ import (
 type fakeDeployer struct {
 	deployResp    store.Deployment
 	deployErr     error
+	lastDeployReq deploy.DeployRequest
 	restartResp   store.Deployment
 	restartErr    error
 	deleteErr     error
@@ -35,8 +36,9 @@ func newFakeDeployer() *fakeDeployer {
 	}
 }
 
-func (f *fakeDeployer) Deploy(_ context.Context, _ deploy.DeployRequest) (store.Deployment, error) {
+func (f *fakeDeployer) Deploy(_ context.Context, req deploy.DeployRequest) (store.Deployment, error) {
 	f.deployCalled = true
+	f.lastDeployReq = req
 	return f.deployResp, f.deployErr
 }
 
@@ -322,4 +324,46 @@ func TestCancelInflight(t *testing.T) {
 
 func itoa(i int64) string {
 	return strconv.FormatInt(i, 10)
+}
+
+func TestRegistryAuthThreadedThrough(t *testing.T) {
+	fd := newFakeDeployer()
+	srv, s := newTestServerWithDeployer(t, fd)
+	ownerTok, _, _ := mintOwnerAppAndToken(t, s, "alice-ra", "myapp-ra")
+
+	resp, _ := doJSON(t, "POST", srv.URL+"/v1/apps/myapp-ra/deployments", ownerTok, map[string]any{
+		"image": "ghcr.io/private/x@sha256:abc",
+		"registry_auth": map[string]string{
+			"username": "ci-bot",
+			"password": "ghp_secret",
+		},
+	})
+	if resp.StatusCode != 200 {
+		t.Fatalf("status: %d", resp.StatusCode)
+	}
+	if fd.lastDeployReq.RegistryAuth == nil {
+		t.Fatal("expected RegistryAuth to be threaded through; got nil")
+	}
+	if fd.lastDeployReq.RegistryAuth.Username != "ci-bot" {
+		t.Fatalf("user: %q", fd.lastDeployReq.RegistryAuth.Username)
+	}
+	if fd.lastDeployReq.RegistryAuth.Password != "ghp_secret" {
+		t.Fatalf("password not threaded through")
+	}
+}
+
+func TestRegistryAuthOmittedWhenAbsent(t *testing.T) {
+	fd := newFakeDeployer()
+	srv, s := newTestServerWithDeployer(t, fd)
+	ownerTok, _, _ := mintOwnerAppAndToken(t, s, "alice-na", "myapp-na")
+
+	resp, _ := doJSON(t, "POST", srv.URL+"/v1/apps/myapp-na/deployments", ownerTok, map[string]any{
+		"image": "nginx:alpine",
+	})
+	if resp.StatusCode != 200 {
+		t.Fatalf("status: %d", resp.StatusCode)
+	}
+	if fd.lastDeployReq.RegistryAuth != nil {
+		t.Fatal("expected RegistryAuth=nil when omitted from request")
+	}
 }

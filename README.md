@@ -21,6 +21,9 @@ Caddy config.
   `dynamic a` with `refresh 1s`.
 - **Bearer token auth:** user tokens, per-app deploy tokens; admins manage
   users; owners manage their own apps.
+- **One-shot pull credentials:** `POST /deployments` accepts an optional
+  `registry_auth` field. The server uses those credentials to pull this one
+  image and forgets them — no long-lived registry secret on the server.
 - **SQLite for state.** Single-host, single binary.
 
 ## Requirements

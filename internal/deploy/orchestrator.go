@@ -35,6 +35,13 @@ type DeployRequest struct {
 	CommitSHA   string
 	GitRef      string
 	TriggeredBy int64
+
+	// RegistryAuth is one-shot credentials for pulling ImageRef. It overrides
+	// the orchestrator's default Docker client credentials for this deploy
+	// only, allowing the caller (CI or operator) to supply short-lived,
+	// scope-narrow tokens instead of relying on a long-lived server secret.
+	// nil ⇒ fall back to the Docker client's default registry auth.
+	RegistryAuth *docker.RegistryAuth
 }
 
 // Deploy pulls the image, starts a container, runs a health check, and swaps
@@ -53,8 +60,10 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 		return store.Deployment{}, err
 	}
 
-	// Step 1: pull (and resolve digest).
-	digest, err := o.Docker.Pull(deployCtx, req.ImageRef)
+	// Step 1: pull (and resolve digest). RegistryAuth from the caller, if
+	// provided, overrides the Docker client's default credentials for this
+	// pull only — see DeployRequest.RegistryAuth.
+	digest, err := o.Docker.Pull(deployCtx, req.ImageRef, req.RegistryAuth)
 	if err != nil {
 		return o.recordFailure(ctx, req, "pull_failed", err)
 	}

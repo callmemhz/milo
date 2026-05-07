@@ -63,10 +63,18 @@ type EnvPatchReq struct {
 	Unset []string          `json:"unset,omitempty"`
 }
 
+// RegistryAuth carries one-shot pull credentials. Treated as sensitive — the
+// server uses these to pull the deploy image and never stores them.
+type RegistryAuth struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type CreateDeploymentReq struct {
-	Image  string `json:"image"`
-	Commit string `json:"commit,omitempty"`
-	Ref    string `json:"ref,omitempty"`
+	Image        string        `json:"image"`
+	Commit       string        `json:"commit,omitempty"`
+	Ref          string        `json:"ref,omitempty"`
+	RegistryAuth *RegistryAuth `json:"registry_auth,omitempty"`
 }
 
 type DeploymentResp struct {

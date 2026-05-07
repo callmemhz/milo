@@ -10,6 +10,7 @@ import (
 
 	"github.com/callmemhz/milo-apps-kit/internal/auth"
 	"github.com/callmemhz/milo-apps-kit/internal/deploy"
+	"github.com/callmemhz/milo-apps-kit/internal/docker"
 	"github.com/callmemhz/milo-apps-kit/internal/store"
 	"github.com/callmemhz/milo-apps-kit/pkg/api"
 )
@@ -88,13 +89,21 @@ func (s *Server) handleCreateDeployment(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	var auth *docker.RegistryAuth
+	if req.RegistryAuth != nil {
+		auth = &docker.RegistryAuth{
+			Username: req.RegistryAuth.Username,
+			Password: req.RegistryAuth.Password,
+		}
+	}
 	dep, err := s.Deployer.Deploy(r.Context(), deploy.DeployRequest{
-		AppID:       a.ID,
-		AppName:     a.Name,
-		ImageRef:    req.Image,
-		CommitSHA:   req.Commit,
-		GitRef:      req.Ref,
-		TriggeredBy: id.Token.ID,
+		AppID:        a.ID,
+		AppName:      a.Name,
+		ImageRef:     req.Image,
+		CommitSHA:    req.Commit,
+		GitRef:       req.Ref,
+		TriggeredBy:  id.Token.ID,
+		RegistryAuth: auth,
 	})
 	if err != nil {
 		if dep.ID != 0 {

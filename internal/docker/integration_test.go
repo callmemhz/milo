@@ -45,7 +45,7 @@ func TestEnsureNetwork(t *testing.T) {
 
 func TestPullSmallImage(t *testing.T) {
 	c := newTestClient(t)
-	digest, err := c.Pull(context.Background(), "alpine:3.19")
+	digest, err := c.Pull(context.Background(), "alpine:3.19", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func TestRunStopRemove(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "alpine:3.19"); err != nil {
+	if _, err := c.Pull(ctx, "alpine:3.19", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -109,7 +109,7 @@ func TestLogs(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "alpine:3.19"); err != nil {
+	if _, err := c.Pull(ctx, "alpine:3.19", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -159,7 +159,7 @@ func TestListOnNetwork(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "alpine:3.19"); err != nil {
+	if _, err := c.Pull(ctx, "alpine:3.19", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -200,7 +200,7 @@ func TestIPInNetwork(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "alpine:3.19"); err != nil {
+	if _, err := c.Pull(ctx, "alpine:3.19", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -238,7 +238,7 @@ func TestHealthCheckPasses(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "nginx:alpine"); err != nil {
+	if _, err := c.Pull(ctx, "nginx:alpine", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -276,7 +276,7 @@ func TestHealthCheckFailsOnExit(t *testing.T) {
 	if err := c.EnsureNetwork(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := c.Pull(ctx, "alpine:3.19"); err != nil {
+	if _, err := c.Pull(ctx, "alpine:3.19", nil); err != nil {
 		t.Fatal(err)
 	}
 
