@@ -1,0 +1,48 @@
+services:
+  milo-apps-kit-control-plane:
+    image: ghcr.io/callmemhz/milo-apps-kit-server:${MILO_APPS_KIT_VERSION:-latest}
+    container_name: milo-apps-kit-control-plane
+    restart: unless-stopped
+    environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+      STATE_DIR: /var/lib/milo-apps-kit
+      MILO_APPS_KIT_NETWORK: ${MILO_APPS_KIT_NETWORK:-milo-apps-kit-net}
+      GHCR_USER: ${GHCR_USER}
+      GHCR_TOKEN: ${GHCR_TOKEN}
+      MILO_APPS_KIT_VERSION: ${MILO_APPS_KIT_VERSION:-latest}
+    volumes:
+      - milo-apps-kit-state:/var/lib/milo-apps-kit
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - milo-apps-kit-net
+
+  caddy:
+    # The base caddy:2 image does not include DNS provider plugins.
+    # Either build a custom image with `caddy-dns/cloudflare`, or use a
+    # community image such as `caddybuilds/caddy-cloudflare`. The line below
+    # uses the community image; replace if you target a different DNS provider.
+    image: caddybuilds/caddy-cloudflare:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DNS_API_TOKEN: ${DNS_API_TOKEN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - milo-apps-kit-net
+
+volumes:
+  milo-apps-kit-state:
+  caddy-data:
+  caddy-config:
+
+networks:
+  milo-apps-kit-net:
+    driver: bridge
+    name: ${MILO_APPS_KIT_NETWORK:-milo-apps-kit-net}

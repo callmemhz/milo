@@ -1,0 +1,77 @@
+# Triggered on `git tag vX.Y.Z && git push --tags`.
+#
+# Two parallel jobs:
+#   1. release      — goreleaser: cross-build CLI, GitHub Release, Homebrew tap
+#   2. server-image — multi-arch buildx → ghcr.io/callmemhz/milo-apps-kit-server
+#
+# CLI distribution after a release:
+#   - brew install callmemhz/milo-apps-kit/milo-apps-kit
+#   - or download a tarball from the GitHub Release page
+
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # create GitHub Release + upload assets
+  packages: write   # push image to GHCR
+
+jobs:
+  release:
+    name: cross-build CLI + publish Release + update brew tap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # goreleaser needs full history for the changelog
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # default GITHUB_TOKEN is scoped to this repo only; need a separate PAT
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+  server-image:
+    name: build & push server image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3   # arm64 emulation on the amd64 runner
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/callmemhz/milo-apps-kit-server
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+            type=sha,format=long
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

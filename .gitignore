@@ -1,0 +1,23 @@
+# Binaries
+/milo-apps-kit
+/milo-apps-kit-server
+/bin/
+*.exe
+
+# Test artifacts
+*.out
+coverage.*
+*.test
+
+# Local state
+/var/
+*.db
+*.db-wal
+*.db-shm
+
+# OS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/

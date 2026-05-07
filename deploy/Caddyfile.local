@@ -1,0 +1,34 @@
+# Local-testing Caddy config: HTTP only (no LE, no DNS plugin).
+# Used together with deploy/docker-compose.local.yml.
+#
+# `*.app.test` is RFC 6761 reserved for testing — no chance of clashing with a
+# real domain. Map milo-apps-kit.test and *.app.test to the test machine's IP via the
+# host's /etc/hosts (or a wildcard DNS resolver if you have one).
+#
+# Subdomain extraction: for `myapp.app.test` the labels are:
+#   labels.0 = test
+#   labels.1 = app
+#   labels.2 = myapp     <-- app name
+# (Production Caddyfile uses labels.3 because the root is *.app.example.com.)
+
+{
+    auto_https off
+    admin off
+}
+
+http://milo-apps-kit.test {
+    reverse_proxy milo-apps-kit-control-plane:8000
+}
+
+http://*.app.test {
+    reverse_proxy {
+        dynamic a {
+            name {http.request.host.labels.2}
+            port 8080
+            refresh 1s
+        }
+    }
+    handle_errors {
+        respond "App not running or not deployed yet" 502
+    }
+}

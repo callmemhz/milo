@@ -1,0 +1,47 @@
+# Local-testing compose: builds milo-apps-kit-server from source, uses HTTP-only Caddy.
+# Run from the deploy/ directory:
+#   docker compose -f docker-compose.local.yml up -d --build
+
+services:
+  milo-apps-kit-control-plane:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: milo-apps-kit-control-plane
+    restart: unless-stopped
+    environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN:-app.test}
+      API_DOMAIN: ${API_DOMAIN:-milo-apps-kit.test}
+      STATE_DIR: /var/lib/milo-apps-kit
+      MILO_APPS_KIT_NETWORK: milo-apps-kit-net
+      GHCR_USER: ${GHCR_USER:-}
+      GHCR_TOKEN: ${GHCR_TOKEN:-}
+      MILO_APPS_KIT_VERSION: local
+    volumes:
+      - milo-apps-kit-state:/var/lib/milo-apps-kit
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - milo-apps-kit-net
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - milo-apps-kit-net
+
+volumes:
+  milo-apps-kit-state:
+  caddy-data:
+  caddy-config:
+
+networks:
+  milo-apps-kit-net:
+    driver: bridge
+    name: milo-apps-kit-net

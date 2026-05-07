@@ -1,0 +1,25 @@
+{
+    email admin@example.com
+}
+
+milo-apps-kit.example.com {
+    reverse_proxy milo-apps-kit-control-plane:8000
+}
+
+*.app.example.com {
+    tls {
+        dns cloudflare {env.DNS_API_TOKEN}
+    }
+    reverse_proxy {
+        dynamic a {
+            name {http.request.host.labels.3}
+            port 8080
+            # 1s refresh keeps rolling deploys snappy; default is 1m which
+            # causes ~60s of 502s after each deploy as Caddy caches the old IP.
+            refresh 1s
+        }
+    }
+    handle_errors {
+        respond "App not running or not deployed yet" 502
+    }
+}
