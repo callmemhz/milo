@@ -28,9 +28,6 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 				return err
 			}
 			req := api.CreateAppReq{Name: args[0]}
-			if v, _ := c.Flags().GetInt64("port"); v > 0 {
-				req.Port = v
-			}
 			if v, _ := c.Flags().GetFloat64("cpu"); v > 0 {
 				req.CPULimit = v
 			}
@@ -51,7 +48,6 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 			return nil
 		},
 	}
-	create.Flags().Int64("port", 0, "container port")
 	create.Flags().Float64("cpu", 0, "CPU limit (e.g. 0.5)")
 	create.Flags().Int64("memory", 0, "memory limit in MB")
 	create.Flags().String("health-path", "", "HTTP path for health check")
@@ -120,10 +116,6 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 				return err
 			}
 			req := api.UpdateAppReq{}
-			if c.Flags().Changed("port") {
-				v, _ := c.Flags().GetInt64("port")
-				req.Port = &v
-			}
 			if c.Flags().Changed("cpu") {
 				v, _ := c.Flags().GetFloat64("cpu")
 				req.CPULimit = &v
@@ -144,7 +136,6 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 			return nil
 		},
 	}
-	update.Flags().Int64("port", 0, "container port")
 	update.Flags().Float64("cpu", 0, "CPU limit")
 	update.Flags().Int64("memory", 0, "memory limit in MB")
 	update.Flags().String("health-path", "", "HTTP health check path")

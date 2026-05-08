@@ -63,6 +63,17 @@ milo-apps-kit auth login \
 
 Then create real users, apps, deploy tokens, and deploy.
 
+## Container contract
+
+Your app **must read the `PORT` environment variable** and listen on that
+port. The platform always sets `PORT=8080` and Caddy routes `<app>.<root>`
+traffic to the container's port 8080. Hardcoding a port in your image
+breaks routing. Most modern frameworks already follow this convention
+(Express, FastAPI, Spring Boot, Gin, Rails, Next.js, …).
+
+This is the same contract Heroku, Cloud Run, Railway, Render, and Fly use,
+so an app that runs on any of those typically runs here unchanged.
+
 ## Deploy contract
 
 A typical CI step (GitHub Actions example):

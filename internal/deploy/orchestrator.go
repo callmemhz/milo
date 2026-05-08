@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/callmemhz/milo-apps-kit/internal/docker"
@@ -84,6 +85,13 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 	}
 
 	env, _ := o.Store.GetAppEnv(ctx, req.AppID)
+	if env == nil {
+		env = map[string]string{}
+	}
+	// PaaS contract: the platform tells the app which port to listen on via
+	// $PORT. User env can't override this — it's the wire-level invariant
+	// that lets Caddy reach the container at a fixed address.
+	env["PORT"] = strconv.Itoa(int(a.Port))
 
 	// Use the original image ref to start the container — the image is already
 	// pulled locally and Docker resolves it by tag. The digest is stored in DB
