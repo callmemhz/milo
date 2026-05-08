@@ -19,7 +19,8 @@ This directory contains the files needed to run the Milo Apps Kit control plane 
 ```bash
 cd deploy/
 cp env.example .env
-# Edit .env — fill in ROOT_DOMAIN, API_DOMAIN, GHCR_USER, GHCR_TOKEN, DNS_API_TOKEN
+# Edit .env — fill in ROOT_DOMAIN, API_DOMAIN, GHCR_USER, GHCR_TOKEN,
+#                    ALIDNS_ACCESS_KEY_ID, ALIDNS_ACCESS_KEY_SECRET
 docker compose up -d
 ```
 
@@ -161,17 +162,17 @@ On restart, the server runs schema migrations and startup hygiene automatically.
 
 ## Caddy DNS Plugin Variants
 
-The `docker-compose.yml` uses `caddybuilds/caddy-cloudflare:latest`, which bundles the Cloudflare DNS-01 plugin. The base `caddy:2` image does **not** include any DNS provider plugin, so do not swap to it without rebuilding.
+The `docker-compose.yml` builds Caddy locally from `Dockerfile.caddy`, which bakes in `caddy-dns/alidns` via xcaddy. The base `caddy:2` image does **not** include any DNS provider plugin.
 
-If your DNS is not on Cloudflare, change both files:
+To switch DNS providers, edit `Dockerfile.caddy` (swap the `--with` line) and `Caddyfile` (swap the `dns` directive and env vars), then rebuild: `docker compose build caddy && docker compose up -d caddy`.
 
-| Provider   | Compose image                     | Caddyfile directive           |
-|------------|-----------------------------------|-------------------------------|
-| Cloudflare | `caddybuilds/caddy-cloudflare`    | `dns cloudflare {env.DNS_API_TOKEN}` |
-| Route 53   | build with `caddy-dns/route53`    | `dns route53 {env.DNS_API_TOKEN}`   |
-| AliDNS     | build with `caddy-dns/alidns`     | `dns alidns {env.DNS_API_TOKEN}`    |
+| Provider   | xcaddy module                  | Caddyfile directive |
+|------------|--------------------------------|---------------------|
+| AliDNS     | `github.com/caddy-dns/alidns`     | `dns alidns { access_key_id ... access_key_secret ... }` |
+| Cloudflare | `github.com/caddy-dns/cloudflare` | `dns cloudflare {env.CF_API_TOKEN}` |
+| Route 53   | `github.com/caddy-dns/route53`    | `dns route53` (uses standard AWS env vars) |
 
-Community-built images are listed at <https://github.com/caddyserver/caddy-docker>.
+The full provider list is at <https://github.com/caddy-dns>.
 
 ---
 

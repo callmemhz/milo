@@ -18,18 +18,20 @@ services:
       - milo-apps-kit-net
 
   caddy:
-    # The base caddy:2 image does not include DNS provider plugins.
-    # Either build a custom image with `caddy-dns/cloudflare`, or use a
-    # community image such as `caddybuilds/caddy-cloudflare`. The line below
-    # uses the community image; replace if you target a different DNS provider.
-    image: caddybuilds/caddy-cloudflare:latest
+    # Custom Caddy build with the caddy-dns/alidns plugin baked in (xcaddy).
+    # Swap Dockerfile.caddy if you want a different DNS provider.
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    image: milo-apps-kit-caddy:local
     container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     environment:
-      DNS_API_TOKEN: ${DNS_API_TOKEN}
+      ALIDNS_ACCESS_KEY_ID: ${ALIDNS_ACCESS_KEY_ID}
+      ALIDNS_ACCESS_KEY_SECRET: ${ALIDNS_ACCESS_KEY_SECRET}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

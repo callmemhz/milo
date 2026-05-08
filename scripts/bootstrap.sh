@@ -8,12 +8,13 @@
 # What it does:
 #   1. Installs Docker via get.docker.com (skipped if already present)
 #   2. Downloads deploy/{docker-compose.yml,Caddyfile,env.example} from this repo
-#   3. Prompts for ROOT_DOMAIN, API_DOMAIN, DNS_API_TOKEN
+#   3. Prompts for ROOT_DOMAIN, API_DOMAIN, ALIDNS_ACCESS_KEY_ID/SECRET
 #   4. Writes .env, runs `docker compose up -d`
 #   5. Captures the first-run BOOTSTRAP_ADMIN_TOKEN and prints it
 #
 # Override behavior with env vars (for unattended installs):
-#   ROOT_DOMAIN, API_DOMAIN, DNS_API_TOKEN, GHCR_USER, GHCR_TOKEN
+#   ROOT_DOMAIN, API_DOMAIN, ALIDNS_ACCESS_KEY_ID, ALIDNS_ACCESS_KEY_SECRET,
+#   GHCR_USER, GHCR_TOKEN
 #   INSTALL_DIR (default: /opt/milo-apps-kit)
 #   MILO_APPS_KIT_VERSION (default: latest)
 #   REF (default: main — branch/tag to fetch deploy assets from)
@@ -56,27 +57,30 @@ prompt_var() {
   local var=$1 desc=$2 default=${3:-}
   if [ -n "${!var:-}" ]; then return; fi
   local val=""
-  if [ -t 0 ]; then
+  if [ -r /dev/tty ]; then
     if [ -n "$default" ]; then
-      read -rp "$desc [$default]: " val
+      read -rp "$desc [$default]: " val < /dev/tty
     else
-      read -rp "$desc: " val
+      read -rp "$desc: " val < /dev/tty
     fi
   fi
   eval "$var=\"\${val:-\$default}\""
 }
 
 log "Configuration"
-prompt_var ROOT_DOMAIN   "Apps wildcard root (e.g. app.example.com)"
-prompt_var API_DOMAIN    "PaaS API hostname (e.g. milo-apps-kit.example.com)"
-prompt_var DNS_API_TOKEN "Cloudflare API token (Zone:DNS:Edit on root zone)"
-prompt_var GHCR_USER     "Fallback GHCR username (leave empty to skip)" ""
+prompt_var ROOT_DOMAIN              "Apps wildcard root (e.g. app.example.com)"
+prompt_var API_DOMAIN               "PaaS API hostname (e.g. milo-apps-kit.example.com)"
+prompt_var ALIDNS_ACCESS_KEY_ID     "Aliyun RAM AccessKey ID (DNS-only, scoped to your domain)"
+prompt_var ALIDNS_ACCESS_KEY_SECRET "Aliyun RAM AccessKey Secret"
+prompt_var GHCR_USER                "Fallback GHCR username (leave empty to skip)" ""
 if [ -n "${GHCR_USER:-}" ]; then
-  prompt_var GHCR_TOKEN  "GHCR token (read:packages PAT)"
+  prompt_var GHCR_TOKEN             "GHCR token (read:packages PAT)"
 fi
 
-if [ -z "${ROOT_DOMAIN:-}" ] || [ -z "${API_DOMAIN:-}" ] || [ -z "${DNS_API_TOKEN:-}" ]; then
-  err "ROOT_DOMAIN, API_DOMAIN, DNS_API_TOKEN are required"
+if [ -z "${ROOT_DOMAIN:-}" ] || [ -z "${API_DOMAIN:-}" ] \
+    || [ -z "${ALIDNS_ACCESS_KEY_ID:-}" ] || [ -z "${ALIDNS_ACCESS_KEY_SECRET:-}" ]; then
+  err "ROOT_DOMAIN, API_DOMAIN, ALIDNS_ACCESS_KEY_ID, ALIDNS_ACCESS_KEY_SECRET are required"
+  err "(no TTY detected? re-run with these values preset as env vars)"
   exit 1
 fi
 
@@ -86,7 +90,7 @@ fi
 log "Installing to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
-for f in docker-compose.yml Caddyfile env.example; do
+for f in docker-compose.yml Caddyfile Dockerfile.caddy env.example; do
   curl -fsSL "$RAW_BASE/deploy/$f" -o "$f"
 done
 
@@ -102,7 +106,8 @@ MILO_APPS_KIT_NETWORK=milo-apps-kit-net
 MILO_APPS_KIT_VERSION=$VERSION
 GHCR_USER=${GHCR_USER:-}
 GHCR_TOKEN=${GHCR_TOKEN:-}
-DNS_API_TOKEN=$DNS_API_TOKEN
+ALIDNS_ACCESS_KEY_ID=$ALIDNS_ACCESS_KEY_ID
+ALIDNS_ACCESS_KEY_SECRET=$ALIDNS_ACCESS_KEY_SECRET
 EOF
 chmod 600 .env
 
@@ -110,7 +115,9 @@ chmod 600 .env
 # 5. Pull + start
 # ────────────────────────────────────────────────────────────────────────
 log "Pulling images"
-docker compose pull
+docker compose pull --ignore-buildable
+log "Building caddy with alidns plugin"
+docker compose build caddy
 log "Starting stack"
 docker compose up -d
 

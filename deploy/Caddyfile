@@ -8,7 +8,10 @@ milo-apps-kit.example.com {
 
 *.app.example.com {
     tls {
-        dns cloudflare {env.DNS_API_TOKEN}
+        dns alidns {
+            access_key_id {env.ALIDNS_ACCESS_KEY_ID}
+            access_key_secret {env.ALIDNS_ACCESS_KEY_SECRET}
+        }
     }
     reverse_proxy {
         dynamic a {
