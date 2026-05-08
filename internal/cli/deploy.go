@@ -19,15 +19,19 @@ func deployCmd(getClient clientFactory) *cobra.Command {
 		Long: `Deploy an image to an application.
 
 If the image lives in a private registry (e.g. ghcr.io/your-org/repo for an
-internal repo), the server needs credentials to pull it. Three ways to supply
+internal repo), the server needs credentials to pull it. Two ways to supply
 them, in priority order:
 
-  --gh-auth                                 use the local 'gh' CLI's session
-                                            (--registry-user defaults to the
-                                            authenticated GitHub login)
   --registry-user / --registry-token        explicit one-shot credentials
+  --gh-auth                                 use the local 'gh' CLI's session
   (none)                                    fall back to the server's globally
-                                            configured creds (or anonymous)`,
+                                            configured creds (or anonymous)
+
+Caveat for ghcr.io: --gh-auth grabs the OAuth-style token from 'gh auth
+token' (gho_*). GHCR does NOT accept those tokens for private package pulls
+even with read:packages scope — only Personal Access Tokens (classic or
+fine-grained) work. For private images on ghcr.io, create a PAT with
+read:packages scope and pass it via --registry-token.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			cli, out, err := getClient()
@@ -73,7 +77,7 @@ them, in priority order:
 	cmd.Flags().String("ref", "", "git ref (audit only)")
 	cmd.Flags().String("registry-user", "", "registry username for one-shot pull auth")
 	cmd.Flags().String("registry-token", "", "registry password/token for one-shot pull auth")
-	cmd.Flags().Bool("gh-auth", false, "use 'gh auth token' + GitHub login as registry credentials")
+	cmd.Flags().Bool("gh-auth", false, "use 'gh auth token' + GitHub login as registry credentials (does NOT work with ghcr.io private packages — use --registry-token=<PAT> instead)")
 	return cmd
 }
 
