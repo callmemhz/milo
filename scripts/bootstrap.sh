@@ -95,6 +95,21 @@ for f in docker-compose.yml Caddyfile Dockerfile.caddy env.example; do
 done
 
 # ────────────────────────────────────────────────────────────────────────
+# 3a. Substitute placeholders in Caddyfile
+#     - app.example.com           → $ROOT_DOMAIN
+#     - milo-apps-kit.example.com → $API_DOMAIN
+#     - labels.3                  → labels.<N>  where N = # labels in
+#       ROOT_DOMAIN (so {http.request.host.labels.N} extracts the leftmost
+#       subdomain regardless of root depth)
+# ────────────────────────────────────────────────────────────────────────
+ROOT_LABELS=$(awk -F. '{print NF}' <<<"$ROOT_DOMAIN")
+sed -i \
+  -e "s|app\.example\.com|${ROOT_DOMAIN}|g" \
+  -e "s|milo-apps-kit\.example\.com|${API_DOMAIN}|g" \
+  -e "s|labels\.3|labels.${ROOT_LABELS}|g" \
+  Caddyfile
+
+# ────────────────────────────────────────────────────────────────────────
 # 4. Write .env
 # ────────────────────────────────────────────────────────────────────────
 log "Writing $INSTALL_DIR/.env"
