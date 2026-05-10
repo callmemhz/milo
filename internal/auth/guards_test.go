@@ -25,7 +25,7 @@ func TestRequireOwnerOrAdmin(t *testing.T) {
 	admin, _ := s.CreateUser(ctx, "admin", true)
 	owner, _ := s.CreateUser(ctx, "alice", false)
 	other, _ := s.CreateUser(ctx, "bob", false)
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	_ = s.AddOwner(ctx, a.ID, owner.ID)
 
 	if err := RequireOwnerOrAdmin(ctx, s, &Identity{User: &admin}, a.ID); err != nil {

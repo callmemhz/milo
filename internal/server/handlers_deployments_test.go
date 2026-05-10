@@ -70,7 +70,7 @@ func mintOwnerAndApp(t *testing.T, s *store.Store, username, appName string) str
 	if _, err := s.CreateUserToken(ctx, u.ID, auth.Hash(pt), ""); err != nil {
 		t.Fatal(err)
 	}
-	a, err := s.CreateApp(ctx, appName, 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,7 @@ func mintOwnerAppAndToken(t *testing.T, s *store.Store, username, appName string
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := s.CreateApp(ctx, appName, 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestDeployForbiddenWithWrongScopeDeployToken(t *testing.T) {
 	ctx := context.Background()
 
 	// create app-a and a deploy token for it
-	a, err := s.CreateApp(ctx, "app-a", 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, "app-a", store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -155,7 +155,7 @@ func TestDeployForbiddenWithWrongScopeDeployToken(t *testing.T) {
 	}
 
 	// create app-b
-	if _, err := s.CreateApp(ctx, "app-b", 8080, "/", 30, 0.5, 512); err != nil {
+	if _, err := s.CreateApp(ctx, "app-b", store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -189,7 +189,7 @@ func TestDeployByDeployTokenSucceeds(t *testing.T) {
 	srv, s := newTestServerWithDeployer(t, fd)
 	ctx := context.Background()
 
-	a, err := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, "myapp", store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}

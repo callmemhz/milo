@@ -50,7 +50,7 @@ func mintUserToken(t *testing.T, s *store.Store, username string, isAdmin bool) 
 func mintDeployToken(t *testing.T, s *store.Store, appName string) string {
 	t.Helper()
 	ctx := context.Background()
-	a, err := s.CreateApp(ctx, appName, 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}

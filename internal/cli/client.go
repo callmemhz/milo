@@ -49,7 +49,7 @@ func (c *Client) do(method, path string, body any, out any) error {
 	if resp.StatusCode >= 400 {
 		var apiErr api.Error
 		if err := json.NewDecoder(resp.Body).Decode(&apiErr); err == nil && apiErr.Code != "" {
-			return fmt.Errorf("%s (%s)", apiErr.Message, apiErr.Code)
+			return &apiErr
 		}
 		return fmt.Errorf("status %d", resp.StatusCode)
 	}

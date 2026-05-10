@@ -47,7 +47,7 @@ func newHygieneSetup(t *testing.T, appName string) *testSetup {
 	var appID int64
 	var tokenID int64
 	if appName != "" {
-		a, err := s.CreateApp(ctx, appName, 80, "/", 30, 0.5, 128)
+		a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 80, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 128})
 		if err != nil {
 			t.Fatal(err)
 		}

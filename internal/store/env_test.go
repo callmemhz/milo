@@ -8,7 +8,7 @@ import (
 func TestEnvSetGetUnset(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 
 	if err := s.SetAppEnvVar(ctx, a.ID, "FOO", "bar"); err != nil {
 		t.Fatal(err)

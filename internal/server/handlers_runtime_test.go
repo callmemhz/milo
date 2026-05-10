@@ -57,7 +57,7 @@ func insertSucceededDeployment(t *testing.T, s *store.Store, username, appName s
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := s.CreateApp(ctx, appName, 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -54,7 +54,7 @@ func RootCmd() *cobra.Command {
 	root.AddCommand(contextCmd())
 	root.AddCommand(appsCmd(getClient))
 	root.AddCommand(envCmd(getClient))
-	root.AddCommand(deployCmd(getClient))
+	root.AddCommand(applyCmd(getClient))
 	root.AddCommand(deploymentsCmd(getClient))
 	root.AddCommand(usersCmd(getClient))
 	root.AddCommand(tokensCmd(getClient))

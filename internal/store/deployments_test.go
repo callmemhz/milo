@@ -8,7 +8,7 @@ import (
 func TestDeploymentLifecycle(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	u, _ := s.CreateUser(ctx, "alice", false)
 	tk, _ := s.CreateUserToken(ctx, u.ID, "h", "")
 
@@ -40,7 +40,7 @@ func TestDeploymentLifecycle(t *testing.T) {
 func TestListInflightDeployments(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	u, _ := s.CreateUser(ctx, "alice", false)
 	tk, _ := s.CreateUserToken(ctx, u.ID, "h", "")
 	_, _ = s.CreateDeployment(ctx, a.ID, "sha256:a", "ref", "", "", tk.ID)

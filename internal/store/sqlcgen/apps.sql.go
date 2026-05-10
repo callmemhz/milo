@@ -25,9 +25,9 @@ func (q *Queries) AddOwner(ctx context.Context, arg AddOwnerParams) error {
 }
 
 const createApp = `-- name: CreateApp :one
-INSERT INTO apps (name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at
+INSERT INTO apps (name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, volumes, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at, volumes
 `
 
 type CreateAppParams struct {
@@ -37,6 +37,7 @@ type CreateAppParams struct {
 	HealthTimeoutSec int64     `json:"health_timeout_sec"`
 	CpuLimit         float64   `json:"cpu_limit"`
 	MemoryLimitMb    int64     `json:"memory_limit_mb"`
+	Volumes          string    `json:"volumes"`
 	CreatedAt        time.Time `json:"created_at"`
 }
 
@@ -48,6 +49,7 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		arg.HealthTimeoutSec,
 		arg.CpuLimit,
 		arg.MemoryLimitMb,
+		arg.Volumes,
 		arg.CreatedAt,
 	)
 	var i App
@@ -62,12 +64,13 @@ func (q *Queries) CreateApp(ctx context.Context, arg CreateAppParams) (App, erro
 		&i.CurrentDeployID,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Volumes,
 	)
 	return i, err
 }
 
 const getAppByID = `-- name: GetAppByID :one
-SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at FROM apps WHERE id = ? AND deleted_at IS NULL
+SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at, volumes FROM apps WHERE id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetAppByID(ctx context.Context, id int64) (App, error) {
@@ -84,12 +87,13 @@ func (q *Queries) GetAppByID(ctx context.Context, id int64) (App, error) {
 		&i.CurrentDeployID,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Volumes,
 	)
 	return i, err
 }
 
 const getAppByName = `-- name: GetAppByName :one
-SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at FROM apps WHERE name = ? AND deleted_at IS NULL
+SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at, volumes FROM apps WHERE name = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetAppByName(ctx context.Context, name string) (App, error) {
@@ -106,6 +110,7 @@ func (q *Queries) GetAppByName(ctx context.Context, name string) (App, error) {
 		&i.CurrentDeployID,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Volumes,
 	)
 	return i, err
 }
@@ -127,7 +132,7 @@ func (q *Queries) IsOwner(ctx context.Context, arg IsOwnerParams) (bool, error) 
 }
 
 const listApps = `-- name: ListApps :many
-SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at FROM apps WHERE deleted_at IS NULL ORDER BY id
+SELECT id, name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, current_deploy_id, created_at, deleted_at, volumes FROM apps WHERE deleted_at IS NULL ORDER BY id
 `
 
 func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
@@ -150,6 +155,7 @@ func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
 			&i.CurrentDeployID,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Volumes,
 		); err != nil {
 			return nil, err
 		}
@@ -165,7 +171,7 @@ func (q *Queries) ListApps(ctx context.Context) ([]App, error) {
 }
 
 const listAppsByOwner = `-- name: ListAppsByOwner :many
-SELECT a.id, a.name, a.port, a.health_path, a.health_timeout_sec, a.cpu_limit, a.memory_limit_mb, a.current_deploy_id, a.created_at, a.deleted_at FROM apps a
+SELECT a.id, a.name, a.port, a.health_path, a.health_timeout_sec, a.cpu_limit, a.memory_limit_mb, a.current_deploy_id, a.created_at, a.deleted_at, a.volumes FROM apps a
   INNER JOIN app_owners o ON o.app_id = a.id
   WHERE o.user_id = ? AND a.deleted_at IS NULL
   ORDER BY a.id
@@ -191,6 +197,7 @@ func (q *Queries) ListAppsByOwner(ctx context.Context, userID int64) ([]App, err
 			&i.CurrentDeployID,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Volumes,
 		); err != nil {
 			return nil, err
 		}
@@ -283,7 +290,7 @@ func (q *Queries) SoftDeleteApp(ctx context.Context, arg SoftDeleteAppParams) er
 }
 
 const updateAppConfig = `-- name: UpdateAppConfig :exec
-UPDATE apps SET port = ?, health_path = ?, health_timeout_sec = ?, cpu_limit = ?, memory_limit_mb = ?
+UPDATE apps SET port = ?, health_path = ?, health_timeout_sec = ?, cpu_limit = ?, memory_limit_mb = ?, volumes = ?
   WHERE id = ?
 `
 
@@ -293,6 +300,7 @@ type UpdateAppConfigParams struct {
 	HealthTimeoutSec int64   `json:"health_timeout_sec"`
 	CpuLimit         float64 `json:"cpu_limit"`
 	MemoryLimitMb    int64   `json:"memory_limit_mb"`
+	Volumes          string  `json:"volumes"`
 	ID               int64   `json:"id"`
 }
 
@@ -303,6 +311,7 @@ func (q *Queries) UpdateAppConfig(ctx context.Context, arg UpdateAppConfigParams
 		arg.HealthTimeoutSec,
 		arg.CpuLimit,
 		arg.MemoryLimitMb,
+		arg.Volumes,
 		arg.ID,
 	)
 	return err

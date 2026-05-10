@@ -15,6 +15,8 @@
 # Override behavior with env vars (for unattended installs):
 #   ROOT_DOMAIN, API_DOMAIN, ALIDNS_ACCESS_KEY_ID, ALIDNS_ACCESS_KEY_SECRET,
 #   GHCR_USER, GHCR_TOKEN
+#   CPFS_MOUNTS  (optional; "fs-id=server:/path[;...]" — installs systemd
+#                 NFS mount units at /mnt/cpfs/<fs-id>)
 #   INSTALL_DIR (default: /opt/milo)
 #   MILO_VERSION (default: latest)
 #   REF (default: main — branch/tag to fetch deploy assets from)
@@ -125,6 +127,70 @@ ALIDNS_ACCESS_KEY_ID=$ALIDNS_ACCESS_KEY_ID
 ALIDNS_ACCESS_KEY_SECRET=$ALIDNS_ACCESS_KEY_SECRET
 EOF
 chmod 600 .env
+
+# ────────────────────────────────────────────────────────────────────────
+# 4a. CPFS mounts (optional)
+#     For each entry in CPFS_MOUNTS (semicolon-separated "fs-id=nfs-source"
+#     pairs, e.g. "train-fs=abc.cn-hangzhou.nas.aliyuncs.com:/"), install an
+#     auto-reconnect systemd mount unit at /mnt/cpfs/<fs-id>. Skipped if
+#     CPFS_MOUNTS is empty (interactive mode prompts; preset env skips when
+#     unset).
+# ────────────────────────────────────────────────────────────────────────
+prompt_var CPFS_MOUNTS "CPFS mounts (form: fs-id=server:/path[;...]; empty to skip)" ""
+
+if [ -n "${CPFS_MOUNTS:-}" ]; then
+  log "Configuring CPFS mounts"
+  if ! command -v mount.nfs >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      apt-get update -qq && apt-get install -y -qq nfs-common
+    elif command -v yum >/dev/null 2>&1; then
+      yum install -y nfs-utils
+    else
+      err "no apt-get or yum found; install nfs-common/nfs-utils manually before retrying"
+      exit 1
+    fi
+  fi
+
+  IFS=';' read -ra CPFS_PAIRS <<<"$CPFS_MOUNTS"
+  for pair in "${CPFS_PAIRS[@]}"; do
+    pair="${pair// /}"
+    [ -z "$pair" ] && continue
+    fs_id="${pair%%=*}"
+    src="${pair#*=}"
+    if [ -z "$fs_id" ] || [ -z "$src" ] || [ "$fs_id" = "$src" ]; then
+      err "CPFS_MOUNTS entry %q malformed (expected fs-id=server:/path)" "$pair"
+      exit 1
+    fi
+    target="/mnt/cpfs/${fs_id}"
+    unit_name=$(systemd-escape -p --suffix=mount "$target")
+    unit_path="/etc/systemd/system/${unit_name}"
+
+    mkdir -p "$target"
+    cat > "$unit_path" <<EOF
+[Unit]
+Description=Mount CPFS ${fs_id} at ${target}
+After=network-online.target
+Wants=network-online.target
+
+[Mount]
+What=${src}
+Where=${target}
+Type=nfs
+Options=vers=3,nolock,proto=tcp,noresvport,_netdev
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable --now "${unit_name}"
+    if mountpoint -q "$target"; then
+      printf '   ✓ %s mounted at %s\n' "$fs_id" "$target"
+    else
+      err "${fs_id}: mount unit started but target %s is not a mountpoint — check 'systemctl status %s'" "$target" "$unit_name"
+      exit 1
+    fi
+  done
+fi
 
 # ────────────────────────────────────────────────────────────────────────
 # 5. Pull + start

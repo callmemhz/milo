@@ -9,6 +9,7 @@ import (
 
 	"github.com/callmemhz/milo/internal/docker"
 	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/internal/volumes"
 	"github.com/callmemhz/milo/pkg/api"
 )
 
@@ -79,9 +80,10 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 	}
 
 	containerName := fmt.Sprintf("app-%s-%d", req.AppName, time.Now().UnixNano())
-	volumeName := fmt.Sprintf("milo-app-%s-data", req.AppName)
-	if err := o.Docker.EnsureVolume(ctx, volumeName); err != nil {
-		return o.failExisting(ctx, dep.ID, "docker_error", err)
+
+	mounts, err := buildMounts(a.Volumes)
+	if err != nil {
+		return o.failExisting(ctx, dep.ID, "invalid_volumes", err)
 	}
 
 	env, _ := o.Store.GetAppEnv(ctx, req.AppID)
@@ -104,7 +106,7 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 		Port:        int(a.Port),
 		CPULimit:    a.CpuLimit,
 		MemoryMB:    a.MemoryLimitMb,
-		VolumeSrc:   volumeName,
+		Mounts:      mounts,
 		PublishPort: o.PublishPortForTests,
 	}); err != nil {
 		return o.failExisting(ctx, dep.ID, "docker_error", err)
@@ -222,8 +224,29 @@ func (o *Orchestrator) DeleteApp(ctx context.Context, appID int64, deleteVolume 
 			_ = o.Docker.Remove(ctx, *cur.ContainerName)
 		}
 	}
-	if deleteVolume {
-		_ = o.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", a.Name), true)
-	}
+	_ = deleteVolume // Phase 1: declared bind-mounts live on host; no auto-cleanup.
 	return o.Store.SoftDeleteApp(ctx, appID)
+}
+
+// buildMounts decodes the JSON-encoded volumes string from the apps row,
+// translates each spec into a host bind-mount path, and returns the docker
+// mount slice ready to pass to RunSpec.
+func buildMounts(jsonVolumes string) ([]docker.MountSpec, error) {
+	specs, err := store.DecodeVolumes(jsonVolumes)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]docker.MountSpec, 0, len(specs))
+	for _, s := range specs {
+		host, err := volumes.HostPath(s)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, docker.MountSpec{
+			Source:   host,
+			Target:   s.Target,
+			ReadOnly: s.ReadOnly,
+		})
+	}
+	return out, nil
 }

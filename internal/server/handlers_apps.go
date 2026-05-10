@@ -9,6 +9,7 @@ import (
 
 	"github.com/callmemhz/milo/internal/auth"
 	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/internal/volumes"
 	"github.com/callmemhz/milo/pkg/api"
 )
 
@@ -86,8 +87,21 @@ func (s *Server) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	if req.MemoryLimitMB == 0 {
 		req.MemoryLimitMB = defaultMemMB
 	}
+	for _, v := range req.Volumes {
+		if err := volumes.Validate(v); err != nil {
+			writeError(w, api.New(api.ErrInvalid, err.Error()))
+			return
+		}
+	}
 
-	a, err := s.Store.CreateApp(r.Context(), req.Name, req.Port, req.HealthPath, req.HealthTimeoutSec, req.CPULimit, req.MemoryLimitMB)
+	a, err := s.Store.CreateApp(r.Context(), req.Name, store.AppConfig{
+		Port:             req.Port,
+		HealthPath:       req.HealthPath,
+		HealthTimeoutSec: req.HealthTimeoutSec,
+		CPULimit:         req.CPULimit,
+		MemoryLimitMB:    req.MemoryLimitMB,
+		Volumes:          req.Volumes,
+	})
 	if err != nil {
 		writeError(w, api.New(api.ErrConflict, "name in use"))
 		return
@@ -177,12 +191,18 @@ func (s *Server) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, api.New(api.ErrInvalid, "bad json"))
 		return
 	}
+	curVols, err := store.DecodeVolumes(a.Volumes)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	cfg := store.AppConfig{
 		Port:             a.Port,
 		HealthPath:       a.HealthPath,
 		HealthTimeoutSec: a.HealthTimeoutSec,
 		CPULimit:         a.CpuLimit,
 		MemoryLimitMB:    a.MemoryLimitMb,
+		Volumes:          curVols,
 	}
 	redeployNeeded := false
 	if req.Port != nil {
@@ -201,6 +221,16 @@ func (s *Server) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.MemoryLimitMB != nil {
 		cfg.MemoryLimitMB = *req.MemoryLimitMB
+		redeployNeeded = true
+	}
+	if req.Volumes != nil {
+		for _, v := range *req.Volumes {
+			if err := volumes.Validate(v); err != nil {
+				writeError(w, api.New(api.ErrInvalid, err.Error()))
+				return
+			}
+		}
+		cfg.Volumes = *req.Volumes
 		redeployNeeded = true
 	}
 	if err := s.Store.UpdateAppConfig(r.Context(), a.ID, cfg); err != nil {
@@ -241,6 +271,7 @@ func toAppResp(ctx context.Context, s *store.Store, a store.App) api.AppResp {
 	for _, u := range owners {
 		names = append(names, u.Username)
 	}
+	vols, _ := store.DecodeVolumes(a.Volumes)
 	return api.AppResp{
 		ID:               a.ID,
 		Name:             a.Name,
@@ -250,5 +281,6 @@ func toAppResp(ctx context.Context, s *store.Store, a store.App) api.AppResp {
 		CPULimit:         a.CpuLimit,
 		MemoryLimitMB:    a.MemoryLimitMb,
 		Owners:           names,
+		Volumes:          vols,
 	}
 }
