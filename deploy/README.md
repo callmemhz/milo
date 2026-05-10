@@ -1,6 +1,6 @@
-# Milo Apps Kit v1 — Deployment Runbook
+# Milo v1 — Deployment Runbook
 
-This directory contains the files needed to run the Milo Apps Kit control plane on a single VPS.
+This directory contains the files needed to run the Milo control plane on a single VPS.
 
 ---
 
@@ -9,7 +9,7 @@ This directory contains the files needed to run the Milo Apps Kit control plane 
 - VPS running Linux with Docker Engine (≥24) and the Compose plugin (`docker compose`)
 - DNS records on your domain:
   - `*.app.example.com` A → host public IP  (wildcard for user apps)
-  - `milo-apps-kit.example.com`  A → host public IP  (API endpoint)
+  - `milo.example.com`  A → host public IP  (API endpoint)
 - Ports 80 and 443 open in the host firewall
 
 ---
@@ -27,24 +27,24 @@ docker compose up -d
 On first boot the server prints a one-time bootstrap admin token. Capture it:
 
 ```bash
-docker compose logs -f milo-apps-kit-control-plane | grep BOOTSTRAP_ADMIN_TOKEN
+docker compose logs -f milo-control-plane | grep BOOTSTRAP_ADMIN_TOKEN
 ```
 
-The token is printed exactly once. If you miss it, delete `milo-apps-kit-state` and restart.
+The token is printed exactly once. If you miss it, delete `milo-state` and restart.
 
 ---
 
 ## First Login (from a workstation)
 
-Install the `milo-apps-kit` CLI (build from source: `go build ./cmd/milo-apps-kit` in this repo, or pull a release binary).
+Install the `milo` CLI (build from source: `go build ./cmd/milo` in this repo, or pull a release binary).
 
 ```bash
-milo-apps-kit auth login \
-  --endpoint=https://milo-apps-kit.example.com \
+milo auth login \
+  --endpoint=https://milo.example.com \
   --token=<bootstrap-token> \
   --context-name=prod
 
-milo-apps-kit auth whoami   # should return the admin user
+milo auth whoami   # should return the admin user
 ```
 
 ---
@@ -52,7 +52,7 @@ milo-apps-kit auth whoami   # should return the admin user
 ## Create Real Users
 
 ```bash
-milo-apps-kit users create alice
+milo users create alice
 ```
 
 The command returns a plaintext bearer token. Deliver it to alice out-of-band; it is not stored in plaintext and cannot be retrieved later.
@@ -60,9 +60,9 @@ The command returns a plaintext bearer token. Deliver it to alice out-of-band; i
 To rotate the bootstrap admin credential: create a new admin user, log in as that user, then delete the original admin:
 
 ```bash
-milo-apps-kit users create new-admin
-milo-apps-kit auth login --endpoint=... --token=<new-admin-token> --context-name=prod
-milo-apps-kit users delete admin
+milo users create new-admin
+milo auth login --endpoint=... --token=<new-admin-token> --context-name=prod
+milo users delete admin
 ```
 
 ---
@@ -71,20 +71,20 @@ milo-apps-kit users delete admin
 
 ```bash
 # Create an app record
-milo-apps-kit apps create myapp --port=8080
+milo apps create myapp --port=8080
 
 # Create a deploy token for CI
-milo-apps-kit tokens create myapp
-# → copy the token into your CI secret as MILO_APPS_KIT_DEPLOY_TOKEN
+milo tokens create myapp
+# → copy the token into your CI secret as MILO_DEPLOY_TOKEN
 ```
 
 In your GitHub Actions workflow, after `docker/build-push-action@v5`:
 
 ```yaml
-- name: Deploy to Milo Apps Kit
+- name: Deploy to Milo
   run: |
-    curl -fsS -X POST https://milo-apps-kit.example.com/v1/apps/myapp/deployments \
-      -H "Authorization: Bearer ${{ secrets.MILO_APPS_KIT_DEPLOY_TOKEN }}" \
+    curl -fsS -X POST https://milo.example.com/v1/apps/myapp/deployments \
+      -H "Authorization: Bearer ${{ secrets.MILO_DEPLOY_TOKEN }}" \
       -d '{"image":"ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}"}'
 ```
 
@@ -101,11 +101,11 @@ not vend its own CLI binaries.
 
 ```bash
 # macOS / Linuxbrew
-brew install callmemhz/milo-apps-kit/milo-apps-kit
+brew install callmemhz/milo/milo
 
 # Or download a release tarball directly:
-#   https://github.com/callmemhz/milo-apps-kit/releases/latest
-# pick the matching milo-apps-kit_*_<os>_<arch>.tar.gz
+#   https://github.com/callmemhz/milo/releases/latest
+# pick the matching milo_*_<os>_<arch>.tar.gz
 ```
 
 CLI versions are published on each `git tag vX.Y.Z` push to the source repo
@@ -119,18 +119,18 @@ CLI versions are published on each `git tag vX.Y.Z` push to the source repo
 
 ```bash
 docker run --rm \
-  -v milo-apps-kit-state:/state \
+  -v milo-state:/state \
   alpine \
-  sqlite3 /state/milo-apps-kit.db .backup /state/backup.db
+  sqlite3 /state/milo.db .backup /state/backup.db
 ```
 
-Copy `backup.db` off the host, or simply copy `milo-apps-kit.db` directly if the server is stopped.
+Copy `backup.db` off the host, or simply copy `milo.db` directly if the server is stopped.
 
 **Persistent app data volumes:**
 
 ```bash
 docker run --rm \
-  -v milo-apps-kit-app-myapp-data:/data \
+  -v milo-app-myapp-data:/data \
   -v $(pwd):/backup \
   alpine \
   tar czf /backup/myapp-data.tgz /data
@@ -143,7 +143,7 @@ There is no automatic backup scheduler in v1; set up a cron job externally.
 ## Upgrade
 
 ```bash
-# Edit .env: bump MILO_APPS_KIT_VERSION to the new tag
+# Edit .env: bump MILO_VERSION to the new tag
 docker compose pull
 docker compose up -d
 ```

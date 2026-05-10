@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store"
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 type ctxKey int

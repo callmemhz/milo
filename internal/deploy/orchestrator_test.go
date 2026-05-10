@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/docker"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/docker"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 type testSetup struct {
@@ -31,7 +31,7 @@ func newTestSetup(t *testing.T, appName string) *testSetup {
 	}
 	t.Cleanup(func() { s.Close() })
 
-	netName := fmt.Sprintf("milo-apps-kit-net-test-%d", time.Now().UnixNano())
+	netName := fmt.Sprintf("milo-net-test-%d", time.Now().UnixNano())
 	d, err := docker.New(docker.Config{Network: netName})
 	if err != nil {
 		t.Fatal(err)
@@ -116,7 +116,7 @@ func TestSuccessfulDeploy(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, *dep.ContainerName, 5)
 		_ = ts.Docker.Remove(ctx, *dep.ContainerName)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	t.Logf("deployed container: %s", *dep.ContainerName)
@@ -176,7 +176,7 @@ func TestRolloverReplacesContainer(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container2, 5)
 		_ = ts.Docker.Remove(ctx, container2)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 }
 
@@ -198,7 +198,7 @@ func TestPullFailureLeavesAppUntouched(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container1, 5)
 		_ = ts.Docker.Remove(ctx, container1)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	// Now attempt a deploy with a bogus image.
@@ -255,7 +255,7 @@ func TestHealthCheckFailureLeavesAppUntouched(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container1, 5)
 		_ = ts.Docker.Remove(ctx, container1)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	// Create a second app configured for port 9999 — nginx won't listen there,
@@ -368,7 +368,7 @@ func TestSupersededByConcurrentDeploy(t *testing.T) {
 			_ = ts.Docker.Stop(ctx, *dep2.ContainerName, 5)
 			_ = ts.Docker.Remove(ctx, *dep2.ContainerName)
 		}
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	t.Logf("second deploy container: %s", *dep2.ContainerName)
@@ -416,7 +416,7 @@ func TestRestart(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container2, 5)
 		_ = ts.Docker.Remove(ctx, container2)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 }
 
@@ -434,7 +434,7 @@ func TestDeleteAppStopsContainer(t *testing.T) {
 		t.Fatalf("deploy failed: %v", err)
 	}
 	containerName := *dep.ContainerName
-	volumeName := fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName)
+	volumeName := fmt.Sprintf("milo-app-%s-data", ts.AppName)
 
 	// DeleteApp without removing volume.
 	if err := ts.Orch.DeleteApp(ctx, ts.AppID, false); err != nil {
@@ -479,7 +479,7 @@ func TestDeleteAppRemovesVolume(t *testing.T) {
 		t.Fatalf("deploy failed: %v", err)
 	}
 	_ = dep
-	volumeName := fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName)
+	volumeName := fmt.Sprintf("milo-app-%s-data", ts.AppName)
 
 	if err := ts.Orch.DeleteApp(ctx, ts.AppID, true); err != nil {
 		t.Fatalf("DeleteApp(volumes=true) failed: %v", err)

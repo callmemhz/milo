@@ -2,10 +2,10 @@
 #
 # Two parallel jobs:
 #   1. release      — goreleaser: cross-build CLI, GitHub Release, Homebrew tap
-#   2. server-image — multi-arch buildx → ghcr.io/callmemhz/milo-apps-kit-server
+#   2. server-image — multi-arch buildx → ghcr.io/callmemhz/milod
 #
 # CLI distribution after a release:
-#   - brew install callmemhz/milo-apps-kit/milo-apps-kit
+#   - brew install callmemhz/milo/milo
 #   - or download a tarball from the GitHub Release page
 
 name: release
@@ -60,7 +60,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/callmemhz/milo-apps-kit-server
+          images: ghcr.io/callmemhz/milod
           tags: |
             type=ref,event=tag
             type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}

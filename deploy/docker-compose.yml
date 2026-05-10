@@ -1,21 +1,21 @@
 services:
-  milo-apps-kit-control-plane:
-    image: ghcr.io/callmemhz/milo-apps-kit-server:${MILO_APPS_KIT_VERSION:-latest}
-    container_name: milo-apps-kit-control-plane
+  milo-control-plane:
+    image: ghcr.io/callmemhz/milod:${MILO_VERSION:-latest}
+    container_name: milo-control-plane
     restart: unless-stopped
     environment:
       ROOT_DOMAIN: ${ROOT_DOMAIN}
       API_DOMAIN: ${API_DOMAIN}
-      STATE_DIR: /var/lib/milo-apps-kit
-      MILO_APPS_KIT_NETWORK: ${MILO_APPS_KIT_NETWORK:-milo-apps-kit-net}
+      STATE_DIR: /var/lib/milo
+      MILO_NETWORK: ${MILO_NETWORK:-milo-net}
       GHCR_USER: ${GHCR_USER}
       GHCR_TOKEN: ${GHCR_TOKEN}
-      MILO_APPS_KIT_VERSION: ${MILO_APPS_KIT_VERSION:-latest}
+      MILO_VERSION: ${MILO_VERSION:-latest}
     volumes:
-      - milo-apps-kit-state:/var/lib/milo-apps-kit
+      - milo-state:/var/lib/milo
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - milo-apps-kit-net
+      - milo-net
 
   caddy:
     # Custom Caddy build with the caddy-dns/alidns plugin baked in (xcaddy).
@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.caddy
-    image: milo-apps-kit-caddy:local
+    image: milo-caddy:local
     container_name: caddy
     restart: unless-stopped
     ports:
@@ -37,14 +37,14 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     networks:
-      - milo-apps-kit-net
+      - milo-net
 
 volumes:
-  milo-apps-kit-state:
+  milo-state:
   caddy-data:
   caddy-config:
 
 networks:
-  milo-apps-kit-net:
+  milo-net:
     driver: bridge
-    name: ${MILO_APPS_KIT_NETWORK:-milo-apps-kit-net}
+    name: ${MILO_NETWORK:-milo-net}

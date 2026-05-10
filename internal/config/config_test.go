@@ -7,7 +7,7 @@ import (
 
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("ROOT_DOMAIN", "app.example.com")
-	t.Setenv("API_DOMAIN", "milo-apps-kit.example.com")
+	t.Setenv("API_DOMAIN", "milo.example.com")
 	c, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -15,7 +15,7 @@ func TestLoadDefaults(t *testing.T) {
 	if c.HTTPAddr != ":8000" {
 		t.Fatalf("HTTPAddr: %q", c.HTTPAddr)
 	}
-	if c.Network != "milo-apps-kit-net" {
+	if c.Network != "milo-net" {
 		t.Fatalf("Network: %q", c.Network)
 	}
 	if c.Version != "dev" {

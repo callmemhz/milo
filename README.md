@@ -1,4 +1,4 @@
-# milo-apps-kit
+# milo
 
 A lightweight, single-host PaaS for small teams. Inspired by Dokku but smaller
 in scope: it does not build images itself, does not manage multiple nodes
@@ -38,25 +38,25 @@ Caddy config.
 ## Quick start (single host)
 
 ```bash
-git clone https://github.com/callmemhz/milo-apps-kit.git
-cd milo-apps-kit/deploy
+git clone https://github.com/callmemhz/milo.git
+cd milo/deploy
 cp env.example .env       # fill in ROOT_DOMAIN, API_DOMAIN, etc.
 docker compose up -d
-docker compose logs milo-apps-kit-control-plane | grep BOOTSTRAP_ADMIN_TOKEN
+docker compose logs milo-control-plane | grep BOOTSTRAP_ADMIN_TOKEN
 ```
 
 Capture the bootstrap admin token (printed once on stderr) and use it to log
 in from your workstation. Install the CLI:
 
 ```bash
-brew install callmemhz/milo-apps-kit/milo-apps-kit
-# or download a binary from https://github.com/callmemhz/milo-apps-kit/releases
+brew install callmemhz/milo/milo
+# or download a binary from https://github.com/callmemhz/milo/releases
 ```
 
 Then log in:
 
 ```bash
-milo-apps-kit auth login \
+milo auth login \
   --endpoint=https://<api-host>.example.com \
   --token=<bootstrap-token>
 ```
@@ -88,7 +88,7 @@ A typical CI step (GitHub Actions example):
 - run: |
     curl -fsS -X POST \
       https://<api-host>.example.com/v1/apps/myapp/deployments \
-      -H "Authorization: Bearer ${{ secrets.MILO_APPS_KIT_DEPLOY_TOKEN }}" \
+      -H "Authorization: Bearer ${{ secrets.MILO_DEPLOY_TOKEN }}" \
       -d '{"image":"ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}"}'
 ```
 
@@ -100,8 +100,8 @@ Failed deploys leave the previous container untouched.
 
 ```
 cmd/
-  milo-apps-kit/         CLI client (cobra)
-  milo-apps-kit-server/  control plane daemon
+  milo/         CLI client (cobra)
+  milod/  control plane daemon
 internal/
   auth/                  bearer middleware + scope guards
   bootstrap/             first-run admin token

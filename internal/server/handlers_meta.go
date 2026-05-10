@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/callmemhz/milo-apps-kit/internal/auth"
+	"github.com/callmemhz/milo/internal/auth"
 )
 
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {

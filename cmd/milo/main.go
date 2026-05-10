@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/callmemhz/milo-apps-kit/internal/cli"
+	"github.com/callmemhz/milo/internal/cli"
 )
 
 func main() {

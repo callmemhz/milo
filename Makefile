@@ -1,8 +1,8 @@
 .PHONY: build test test-integration lint generate run-server clean
 
 build:
-	go build -o bin/milo-apps-kit-server ./cmd/milo-apps-kit-server
-	go build -o bin/milo-apps-kit ./cmd/milo-apps-kit
+	go build -o bin/milod ./cmd/milod
+	go build -o bin/milo ./cmd/milo
 
 test:
 	go test ./...
@@ -18,7 +18,7 @@ generate:
 	sqlc generate
 
 run-server:
-	go run ./cmd/milo-apps-kit-server
+	go run ./cmd/milod
 
 clean:
 	rm -rf bin/

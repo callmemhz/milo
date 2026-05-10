@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store/sqlcgen"
+	"github.com/callmemhz/milo/internal/store/sqlcgen"
 	_ "modernc.org/sqlite"
 )
 

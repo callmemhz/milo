@@ -10,12 +10,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/bootstrap"
-	"github.com/callmemhz/milo-apps-kit/internal/config"
-	"github.com/callmemhz/milo-apps-kit/internal/deploy"
-	"github.com/callmemhz/milo-apps-kit/internal/docker"
-	"github.com/callmemhz/milo-apps-kit/internal/server"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/bootstrap"
+	"github.com/callmemhz/milo/internal/config"
+	"github.com/callmemhz/milo/internal/deploy"
+	"github.com/callmemhz/milo/internal/docker"
+	"github.com/callmemhz/milo/internal/server"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	s, err := store.Open(filepath.Join(cfg.StateDir, "milo-apps-kit.db"))
+	s, err := store.Open(filepath.Join(cfg.StateDir, "milo.db"))
 	if err != nil {
 		log.Error("store", "err", err)
 		os.Exit(1)

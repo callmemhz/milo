@@ -1,4 +1,4 @@
-module github.com/callmemhz/milo-apps-kit
+module github.com/callmemhz/milo
 
 go 1.25.6
 

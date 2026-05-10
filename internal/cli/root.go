@@ -24,8 +24,8 @@ func RootCmd() *cobra.Command {
 	var jsonOutput bool
 
 	root := &cobra.Command{
-		Use:           "milo-apps-kit",
-		Short:         "Milo Apps Kit CLI",
+		Use:           "milo",
+		Short:         "Milo CLI",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 	}
@@ -43,7 +43,7 @@ func RootCmd() *cobra.Command {
 		}
 		ctx, ok := cfg.Contexts[name]
 		if !ok || ctx.Endpoint == "" {
-			return nil, nil, fmt.Errorf("no active context — run `milo-apps-kit auth login`")
+			return nil, nil, fmt.Errorf("no active context — run `milo auth login`")
 		}
 		return &Client{Endpoint: ctx.Endpoint, Token: ctx.Token},
 			&Output{JSON: jsonOutput, W: os.Stdout},
@@ -69,7 +69,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print CLI version and exit",
 		Run: func(c *cobra.Command, args []string) {
-			fmt.Printf("milo-apps-kit %s (%s)\n", Version, Commit)
+			fmt.Printf("milo %s (%s)\n", Version, Commit)
 		},
 	}
 }

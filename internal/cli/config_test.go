@@ -6,7 +6,7 @@ import (
 )
 
 func TestLoadConfig_missing(t *testing.T) {
-	t.Setenv("MILO_APPS_KIT_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("MILO_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -20,12 +20,12 @@ func TestLoadConfig_missing(t *testing.T) {
 }
 
 func TestSaveLoadRoundTrip(t *testing.T) {
-	t.Setenv("MILO_APPS_KIT_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("MILO_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
 
 	original := &Config{
 		CurrentContext: "prod",
 		Contexts: map[string]Context{
-			"prod": {Endpoint: "https://milo-apps-kit.prod.example.com", Token: "tok-prod"},
+			"prod": {Endpoint: "https://milo.prod.example.com", Token: "tok-prod"},
 			"dev":  {Endpoint: "http://localhost:8000", Token: "tok-dev"},
 		},
 	}
@@ -57,7 +57,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 }
 
 func TestActive(t *testing.T) {
-	t.Setenv("MILO_APPS_KIT_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("MILO_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
 
 	cfg := &Config{
 		CurrentContext: "staging",
@@ -83,7 +83,7 @@ func TestActive(t *testing.T) {
 }
 
 func TestMultiContext(t *testing.T) {
-	t.Setenv("MILO_APPS_KIT_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
+	t.Setenv("MILO_CONFIG", filepath.Join(t.TempDir(), "config.yaml"))
 
 	cfg, _ := LoadConfig()
 	cfg.Contexts["a"] = Context{Endpoint: "https://a.example.com", Token: "token-a"}

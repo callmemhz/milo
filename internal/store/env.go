@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store/sqlcgen"
+	"github.com/callmemhz/milo/internal/store/sqlcgen"
 )
 
 func (s *Store) GetAppEnv(ctx context.Context, appID int64) (map[string]string, error) {

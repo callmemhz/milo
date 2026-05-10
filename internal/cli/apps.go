@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 func appsCmd(getClient clientFactory) *cobra.Command {

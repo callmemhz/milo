@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/docker"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/internal/docker"
+	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
-// Orchestrator manages the full deploy lifecycle for a Milo Apps Kit app.
+// Orchestrator manages the full deploy lifecycle for a Milo app.
 type Orchestrator struct {
 	Store   *store.Store
 	Docker  *docker.Client
@@ -79,7 +79,7 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 	}
 
 	containerName := fmt.Sprintf("app-%s-%d", req.AppName, time.Now().UnixNano())
-	volumeName := fmt.Sprintf("milo-apps-kit-app-%s-data", req.AppName)
+	volumeName := fmt.Sprintf("milo-app-%s-data", req.AppName)
 	if err := o.Docker.EnsureVolume(ctx, volumeName); err != nil {
 		return o.failExisting(ctx, dep.ID, "docker_error", err)
 	}
@@ -223,7 +223,7 @@ func (o *Orchestrator) DeleteApp(ctx context.Context, appID int64, deleteVolume 
 		}
 	}
 	if deleteVolume {
-		_ = o.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", a.Name), true)
+		_ = o.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", a.Name), true)
 	}
 	return o.Store.SoftDeleteApp(ctx, appID)
 }

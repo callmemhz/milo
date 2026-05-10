@@ -12,7 +12,7 @@ import (
 
 func newTestClient(t *testing.T) *Client {
 	t.Helper()
-	netName := fmt.Sprintf("milo-apps-kit-net-test-%d", time.Now().UnixNano())
+	netName := fmt.Sprintf("milo-net-test-%d", time.Now().UnixNano())
 	c, err := New(Config{Network: netName})
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +69,7 @@ func TestRunStopRemove(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	name := fmt.Sprintf("milo-apps-kit-test-run-%d", time.Now().UnixNano())
+	name := fmt.Sprintf("milo-test-run-%d", time.Now().UnixNano())
 	_, err := c.Run(ctx, RunSpec{
 		Name:     name,
 		Alias:    "test-run",
@@ -113,7 +113,7 @@ func TestLogs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	name := fmt.Sprintf("milo-apps-kit-test-logs-%d", time.Now().UnixNano())
+	name := fmt.Sprintf("milo-test-logs-%d", time.Now().UnixNano())
 	_, err := c.Run(ctx, RunSpec{
 		Name:     name,
 		Alias:    "test-logs",
@@ -163,7 +163,7 @@ func TestListOnNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	name := fmt.Sprintf("milo-apps-kit-test-list-%d", time.Now().UnixNano())
+	name := fmt.Sprintf("milo-test-list-%d", time.Now().UnixNano())
 	_, err := c.Run(ctx, RunSpec{
 		Name:     name,
 		Alias:    "test-list",
@@ -204,7 +204,7 @@ func TestIPInNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	name := fmt.Sprintf("milo-apps-kit-test-ip-%d", time.Now().UnixNano())
+	name := fmt.Sprintf("milo-test-ip-%d", time.Now().UnixNano())
 	_, err := c.Run(ctx, RunSpec{
 		Name:     name,
 		Alias:    "test-ip",
@@ -310,7 +310,7 @@ func TestHealthCheckFailsOnExit(t *testing.T) {
 func TestVolumeLifecycle(t *testing.T) {
 	c := newTestClient(t)
 	ctx := context.Background()
-	name := fmt.Sprintf("milo-apps-kit-test-vol-%d", time.Now().UnixNano())
+	name := fmt.Sprintf("milo-test-vol-%d", time.Now().UnixNano())
 	if err := c.EnsureVolume(ctx, name); err != nil {
 		t.Fatal(err)
 	}

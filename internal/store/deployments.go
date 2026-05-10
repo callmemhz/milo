@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store/sqlcgen"
+	"github.com/callmemhz/milo/internal/store/sqlcgen"
 )
 
 type Deployment = sqlcgen.Deployment

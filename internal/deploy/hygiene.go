@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/callmemhz/milo-apps-kit/internal/docker"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/docker"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 // Hygiene cleans up orphaned/stale containers and marks crashed in-flight
@@ -19,7 +19,7 @@ type Hygiene struct {
 
 // Run does three things at startup:
 // 1. Mark any deployment row in pending/deploying as failed (we crashed mid-flight)
-// 2. List milo-apps-kit-net containers; for each:
+// 2. List milo-net containers; for each:
 //   - if no matching app (or app soft-deleted) → orphan, remove
 //   - if app exists but container_name doesn't match the current deploy's container_name → stale, remove
 //   - else keep
@@ -41,7 +41,7 @@ func (h *Hygiene) Run(ctx context.Context) error {
 		return err
 	}
 	for _, c := range containers {
-		appName := c.Labels["milo-apps-kit.app"]
+		appName := c.Labels["milo.app"]
 		if appName == "" {
 			continue
 		}

@@ -45,7 +45,7 @@ func authLoginCmd() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&endpoint, "endpoint", "", "server base URL (e.g. https://milo-apps-kit.example.com)")
+	cmd.Flags().StringVar(&endpoint, "endpoint", "", "server base URL (e.g. https://milo.example.com)")
 	cmd.Flags().StringVar(&token, "token", "", "bearer token")
 	cmd.Flags().StringVar(&ctxName, "context-name", "", "name for this context (default: \"default\")")
 	_ = cmd.MarkFlagRequired("endpoint")
@@ -66,7 +66,7 @@ func authWhoamiCmd() *cobra.Command {
 			}
 			ctx, ok := cfg.Active()
 			if !ok || ctx.Endpoint == "" {
-				return fmt.Errorf("no active context — run `milo-apps-kit auth login`")
+				return fmt.Errorf("no active context — run `milo auth login`")
 			}
 			cli := &Client{Endpoint: ctx.Endpoint, Token: ctx.Token}
 			var resp map[string]any

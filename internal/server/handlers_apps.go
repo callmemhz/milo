@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/callmemhz/milo-apps-kit/internal/auth"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/internal/auth"
+	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 
 var reservedAppNames = map[string]bool{
 	"api": true, "www": true, "admin": true, "auth": true,
-	"docs": true, "milo-apps-kit": true, "caddy": true, "localhost": true,
+	"docs": true, "milo": true, "caddy": true, "localhost": true,
 }
 
 // validAppName matches spec §4.1: 2..32 chars, [a-z0-9-], leading [a-z], trailing [a-z0-9], not in denylist.

@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
-// deployCmd returns the top-level `milo-apps-kit deploy` command.
+// deployCmd returns the top-level `milo deploy` command.
 func deployCmd(getClient clientFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy [app]",
@@ -106,7 +106,7 @@ func runGh(args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
-// deploymentsCmd returns `milo-apps-kit deployments` with list/get/cancel subcommands.
+// deploymentsCmd returns `milo deployments` with list/get/cancel subcommands.
 func deploymentsCmd(getClient clientFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deployments",

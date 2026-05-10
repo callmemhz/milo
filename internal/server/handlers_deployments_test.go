@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/auth"
-	"github.com/callmemhz/milo-apps-kit/internal/deploy"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/internal/auth"
+	"github.com/callmemhz/milo/internal/deploy"
+	"github.com/callmemhz/milo/internal/store"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 // fakeDeployer records calls and returns canned responses.

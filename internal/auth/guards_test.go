@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 func TestRequireAdmin(t *testing.T) {

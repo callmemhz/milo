@@ -20,13 +20,13 @@ type Config struct {
 	Contexts       map[string]Context `yaml:"contexts"`
 }
 
-// ConfigPath returns the path to the config file, honoring MILO_APPS_KIT_CONFIG env override.
+// ConfigPath returns the path to the config file, honoring MILO_CONFIG env override.
 func ConfigPath() string {
-	if v := os.Getenv("MILO_APPS_KIT_CONFIG"); v != "" {
+	if v := os.Getenv("MILO_CONFIG"); v != "" {
 		return v
 	}
 	h, _ := os.UserHomeDir()
-	return filepath.Join(h, ".config", "milo-apps-kit", "config.yaml")
+	return filepath.Join(h, ".config", "milo", "config.yaml")
 }
 
 // LoadConfig reads the config file. Returns an empty config (not an error) when

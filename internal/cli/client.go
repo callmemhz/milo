@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 // Client wraps an HTTP client with a fixed endpoint and bearer token.

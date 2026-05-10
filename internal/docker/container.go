@@ -69,7 +69,7 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 	cfg := &container.Config{
 		Image:  spec.Image,
 		Env:    env,
-		Labels: map[string]string{"milo-apps-kit.app": spec.Alias},
+		Labels: map[string]string{"milo.app": spec.Alias},
 	}
 	if len(spec.Cmd) > 0 {
 		cfg.Cmd = spec.Cmd
@@ -86,7 +86,7 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 		}
 	}
 
-	// Networking config: attach to milo-apps-kit network with aliases.
+	// Networking config: attach to milo network with aliases.
 	netCfg := &dockernetwork.NetworkingConfig{
 		EndpointsConfig: map[string]*dockernetwork.EndpointSettings{
 			c.network: {
@@ -134,7 +134,7 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerInfo
 		Labels: insp.Config.Labels,
 	}
 
-	// Check if container is on the milo-apps-kit network.
+	// Check if container is on the milo network.
 	if insp.NetworkSettings != nil {
 		_, info.Network = insp.NetworkSettings.Networks[c.network]
 
@@ -152,7 +152,7 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerInfo
 	return info, nil
 }
 
-// ListOnNetwork returns all containers (running or stopped) on the milo-apps-kit network.
+// ListOnNetwork returns all containers (running or stopped) on the milo network.
 func (c *Client) ListOnNetwork(ctx context.Context) ([]container.Summary, error) {
 	args := filters.NewArgs(filters.Arg("network", c.network))
 	return c.cli.ContainerList(ctx, container.ListOptions{
@@ -161,7 +161,7 @@ func (c *Client) ListOnNetwork(ctx context.Context) ([]container.Summary, error)
 	})
 }
 
-// IPInNetwork returns the container's IP address on the milo-apps-kit network.
+// IPInNetwork returns the container's IP address on the milo network.
 func (c *Client) IPInNetwork(ctx context.Context, name string) (string, error) {
 	insp, err := c.cli.ContainerInspect(ctx, name)
 	if err != nil {

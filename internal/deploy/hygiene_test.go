@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/callmemhz/milo-apps-kit/internal/docker"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/docker"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 // newHygieneSetup creates an isolated test environment for hygiene tests.
@@ -23,7 +23,7 @@ func newHygieneSetup(t *testing.T, appName string) *testSetup {
 	}
 	t.Cleanup(func() { s.Close() })
 
-	netName := fmt.Sprintf("milo-apps-kit-net-hygiene-%d", time.Now().UnixNano())
+	netName := fmt.Sprintf("milo-net-hygiene-%d", time.Now().UnixNano())
 	d, err := docker.New(docker.Config{Network: netName})
 	if err != nil {
 		t.Fatal(err)
@@ -180,7 +180,7 @@ func TestHygieneRemovesStaleRevision(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container1, 5)
 		_ = ts.Docker.Remove(ctx, container1)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	// Start a stale container with the same app label but a different name.
@@ -243,7 +243,7 @@ func TestHygieneKeepsCurrentContainer(t *testing.T) {
 	t.Cleanup(func() {
 		_ = ts.Docker.Stop(ctx, container1, 5)
 		_ = ts.Docker.Remove(ctx, container1)
-		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-apps-kit-app-%s-data", ts.AppName), true)
+		_ = ts.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", ts.AppName), true)
 	})
 
 	h := newHygiene(ts)

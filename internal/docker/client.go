@@ -10,7 +10,7 @@ import (
 
 // Config holds configuration for the Docker client wrapper.
 type Config struct {
-	// Network is the name of the milo-apps-kit bridge network (default: "milo-apps-kit-net").
+	// Network is the name of the milo bridge network (default: "milo-net").
 	Network string
 
 	// RegistryUser and RegistryPassword are optional credentials for private
@@ -19,7 +19,7 @@ type Config struct {
 	RegistryPassword string
 }
 
-// Client wraps the Docker SDK client with Milo Apps Kit-specific helpers.
+// Client wraps the Docker SDK client with Milo-specific helpers.
 type Client struct {
 	cli      *dockerclient.Client
 	network  string
@@ -31,7 +31,7 @@ type Client struct {
 // and negotiates the API version automatically.
 func New(cfg Config) (*Client, error) {
 	if cfg.Network == "" {
-		cfg.Network = "milo-apps-kit-net"
+		cfg.Network = "milo-net"
 	}
 
 	cli, err := dockerclient.NewClientWithOpts(

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/callmemhz/milo-apps-kit/pkg/api"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

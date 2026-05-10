@@ -1,5 +1,5 @@
 version: 2
-project_name: milo-apps-kit
+project_name: milo
 
 before:
   hooks:
@@ -7,20 +7,20 @@ before:
 
 builds:
   - id: cli
-    main: ./cmd/milo-apps-kit
-    binary: milo-apps-kit
+    main: ./cmd/milo
+    binary: milo
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
     ldflags:
       - -s -w
-      - -X github.com/callmemhz/milo-apps-kit/internal/cli.Version={{.Version}}
-      - -X github.com/callmemhz/milo-apps-kit/internal/cli.Commit={{.ShortCommit}}
+      - -X github.com/callmemhz/milo/internal/cli.Version={{.Version}}
+      - -X github.com/callmemhz/milo/internal/cli.Commit={{.ShortCommit}}
 
 archives:
   - id: cli-archive
     builds: [cli]
-    name_template: "milo-apps-kit_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "milo_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format: tar.gz
     files:
       - LICENSE
@@ -44,18 +44,18 @@ changelog:
       - "Merge branch"
 
 brews:
-  - name: milo-apps-kit
+  - name: milo
     repository:
       owner: callmemhz
-      name: homebrew-milo-apps-kit
+      name: homebrew-milo
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://github.com/callmemhz/milo-apps-kit"
-    description: "milo-apps-kit CLI — single-host PaaS client"
+    homepage: "https://github.com/callmemhz/milo"
+    description: "milo CLI — single-host PaaS client"
     license: "Apache-2.0"
     install: |
-      bin.install "milo-apps-kit"
+      bin.install "milo"
     test: |
-      system "#{bin}/milo-apps-kit", "version"
+      system "#{bin}/milo", "version"
     # Skip pre-release tags
     skip_upload: auto

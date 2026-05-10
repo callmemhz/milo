@@ -3,9 +3,9 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/milo-apps-kit-server ./cmd/milo-apps-kit-server
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/milod ./cmd/milod
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates tzdata
-COPY --from=build /out/milo-apps-kit-server /usr/local/bin/milo-apps-kit-server
-ENTRYPOINT ["/usr/local/bin/milo-apps-kit-server"]
+COPY --from=build /out/milod /usr/local/bin/milod
+ENTRYPOINT ["/usr/local/bin/milod"]

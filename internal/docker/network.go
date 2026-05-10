@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 )
 
-// EnsureNetwork creates the milo-apps-kit bridge network if it does not already exist.
+// EnsureNetwork creates the milo bridge network if it does not already exist.
 // It is safe to call multiple times (idempotent).
 func (c *Client) EnsureNetwork(ctx context.Context) error {
 	args := filters.NewArgs(filters.Arg("name", c.network))
@@ -23,7 +23,7 @@ func (c *Client) EnsureNetwork(ctx context.Context) error {
 
 	_, err = c.cli.NetworkCreate(ctx, c.network, network.CreateOptions{
 		Driver: "bridge",
-		Labels: map[string]string{"milo-apps-kit.managed": "true"},
+		Labels: map[string]string{"milo.managed": "true"},
 	})
 	return err
 }

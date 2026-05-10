@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 var (

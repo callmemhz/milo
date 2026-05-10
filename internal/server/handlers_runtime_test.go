@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/callmemhz/milo-apps-kit/internal/auth"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/auth"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 // fakeLogStreamer implements LogStreamer for tests.

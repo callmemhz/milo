@@ -8,9 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/callmemhz/milo-apps-kit/internal/auth"
-	"github.com/callmemhz/milo-apps-kit/internal/deploy"
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/auth"
+	"github.com/callmemhz/milo/internal/deploy"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 // Deployer is the interface the server uses to trigger deploys. The concrete

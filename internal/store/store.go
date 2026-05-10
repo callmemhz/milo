@@ -6,7 +6,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store/sqlcgen"
+	"github.com/callmemhz/milo/internal/store/sqlcgen"
 )
 
 type Store struct {

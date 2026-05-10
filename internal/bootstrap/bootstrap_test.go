@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/callmemhz/milo-apps-kit/internal/store"
+	"github.com/callmemhz/milo/internal/store"
 )
 
 func captureStderr(fn func()) string {
