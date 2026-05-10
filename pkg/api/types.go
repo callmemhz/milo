@@ -28,34 +28,46 @@ type TokenResp struct {
 	LastUsedAt string `json:"last_used_at,omitempty"`
 }
 
+// VolumeSpec describes one mount point declared on an app. The Source carries
+// a scheme-qualified URI (e.g. "cpfs://train-fs/datasets/foo") that the server
+// translates to a host path at deploy time. Target is the in-container path.
+type VolumeSpec struct {
+	Source   string `json:"source"`
+	Target   string `json:"target"`
+	ReadOnly bool   `json:"read_only,omitempty"`
+}
+
 type CreateAppReq struct {
-	Name             string   `json:"name"`
-	Port             int64    `json:"port,omitempty"`
-	HealthPath       string   `json:"health_path,omitempty"`
-	HealthTimeoutSec int64    `json:"health_timeout_sec,omitempty"`
-	CPULimit         float64  `json:"cpu_limit,omitempty"`
-	MemoryLimitMB    int64    `json:"memory_limit_mb,omitempty"`
-	Owners           []string `json:"owners,omitempty"`
+	Name             string       `json:"name"`
+	Port             int64        `json:"port,omitempty"`
+	HealthPath       string       `json:"health_path,omitempty"`
+	HealthTimeoutSec int64        `json:"health_timeout_sec,omitempty"`
+	CPULimit         float64      `json:"cpu_limit,omitempty"`
+	MemoryLimitMB    int64        `json:"memory_limit_mb,omitempty"`
+	Owners           []string     `json:"owners,omitempty"`
+	Volumes          []VolumeSpec `json:"volumes,omitempty"`
 }
 
 type UpdateAppReq struct {
-	Port             *int64    `json:"port,omitempty"`
-	HealthPath       *string   `json:"health_path,omitempty"`
-	HealthTimeoutSec *int64    `json:"health_timeout_sec,omitempty"`
-	CPULimit         *float64  `json:"cpu_limit,omitempty"`
-	MemoryLimitMB    *int64    `json:"memory_limit_mb,omitempty"`
-	Owners           *[]string `json:"owners,omitempty"`
+	Port             *int64        `json:"port,omitempty"`
+	HealthPath       *string       `json:"health_path,omitempty"`
+	HealthTimeoutSec *int64        `json:"health_timeout_sec,omitempty"`
+	CPULimit         *float64      `json:"cpu_limit,omitempty"`
+	MemoryLimitMB    *int64        `json:"memory_limit_mb,omitempty"`
+	Owners           *[]string     `json:"owners,omitempty"`
+	Volumes          *[]VolumeSpec `json:"volumes,omitempty"`
 }
 
 type AppResp struct {
-	ID               int64    `json:"id"`
-	Name             string   `json:"name"`
-	Port             int64    `json:"port"`
-	HealthPath       string   `json:"health_path"`
-	HealthTimeoutSec int64    `json:"health_timeout_sec"`
-	CPULimit         float64  `json:"cpu_limit"`
-	MemoryLimitMB    int64    `json:"memory_limit_mb"`
-	Owners           []string `json:"owners"`
+	ID               int64        `json:"id"`
+	Name             string       `json:"name"`
+	Port             int64        `json:"port"`
+	HealthPath       string       `json:"health_path"`
+	HealthTimeoutSec int64        `json:"health_timeout_sec"`
+	CPULimit         float64      `json:"cpu_limit"`
+	MemoryLimitMB    int64        `json:"memory_limit_mb"`
+	Owners           []string     `json:"owners"`
+	Volumes          []VolumeSpec `json:"volumes"`
 }
 
 type EnvPatchReq struct {

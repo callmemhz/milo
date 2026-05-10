@@ -15,44 +15,10 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apps",
 		Short: "Manage applications",
+		Long: `Manage applications. Apps are created and configured via
+a milo.yaml manifest applied with 'milo apply'; this group covers the
+runtime operations (list/get/delete/status/logs/restart).`,
 	}
-
-	// create
-	create := &cobra.Command{
-		Use:   "create [name]",
-		Short: "Create a new application",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
-			cli, out, err := getClient()
-			if err != nil {
-				return err
-			}
-			req := api.CreateAppReq{Name: args[0]}
-			if v, _ := c.Flags().GetFloat64("cpu"); v > 0 {
-				req.CPULimit = v
-			}
-			if v, _ := c.Flags().GetInt64("memory"); v > 0 {
-				req.MemoryLimitMB = v
-			}
-			if v, _ := c.Flags().GetString("health-path"); v != "" {
-				req.HealthPath = v
-			}
-			if v, _ := c.Flags().GetStringSlice("owner"); len(v) > 0 {
-				req.Owners = v
-			}
-			var resp api.AppResp
-			if err := cli.Post("/v1/apps", req, &resp); err != nil {
-				return err
-			}
-			out.Print(resp)
-			return nil
-		},
-	}
-	create.Flags().Float64("cpu", 0, "CPU limit (e.g. 0.5)")
-	create.Flags().Int64("memory", 0, "memory limit in MB")
-	create.Flags().String("health-path", "", "HTTP path for health check")
-	create.Flags().StringSlice("owner", nil, "additional owners (admin only)")
-	cmd.AddCommand(create)
 
 	// list
 	list := &cobra.Command{
@@ -104,42 +70,6 @@ func appsCmd(getClient clientFactory) *cobra.Command {
 		},
 	}
 	cmd.AddCommand(get)
-
-	// update
-	update := &cobra.Command{
-		Use:   "update [name]",
-		Short: "Update application configuration",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
-			cli, out, err := getClient()
-			if err != nil {
-				return err
-			}
-			req := api.UpdateAppReq{}
-			if c.Flags().Changed("cpu") {
-				v, _ := c.Flags().GetFloat64("cpu")
-				req.CPULimit = &v
-			}
-			if c.Flags().Changed("memory") {
-				v, _ := c.Flags().GetInt64("memory")
-				req.MemoryLimitMB = &v
-			}
-			if c.Flags().Changed("health-path") {
-				v, _ := c.Flags().GetString("health-path")
-				req.HealthPath = &v
-			}
-			var resp api.AppResp
-			if err := cli.Patch("/v1/apps/"+args[0], req, &resp); err != nil {
-				return err
-			}
-			out.Print(resp)
-			return nil
-		},
-	}
-	update.Flags().Float64("cpu", 0, "CPU limit")
-	update.Flags().Int64("memory", 0, "memory limit in MB")
-	update.Flags().String("health-path", "", "HTTP health check path")
-	cmd.AddCommand(update)
 
 	// delete
 	del := &cobra.Command{

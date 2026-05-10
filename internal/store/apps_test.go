@@ -8,7 +8,7 @@ import (
 func TestCreateAndGetApp(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, err := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, err := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,8 +28,8 @@ func TestCreateAndGetApp(t *testing.T) {
 func TestAppNameUniqueAmongActive(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	_, _ = s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
-	if _, err := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512); err == nil {
+	_, _ = s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
+	if _, err := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512}); err == nil {
 		t.Fatal("expected duplicate error")
 	}
 }
@@ -37,9 +37,9 @@ func TestAppNameUniqueAmongActive(t *testing.T) {
 func TestSoftDeleteAllowsAppNameReuse(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	_ = s.SoftDeleteApp(ctx, a.ID)
-	if _, err := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512); err != nil {
+	if _, err := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512}); err != nil {
 		t.Fatalf("reuse failed: %v", err)
 	}
 }
@@ -47,7 +47,7 @@ func TestSoftDeleteAllowsAppNameReuse(t *testing.T) {
 func TestOwners(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	u, _ := s.CreateUser(ctx, "alice", false)
 	if err := s.AddOwner(ctx, a.ID, u.ID); err != nil {
 		t.Fatal(err)
@@ -81,7 +81,7 @@ func TestOwners(t *testing.T) {
 func TestUpdateAppConfig(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	cfg := AppConfig{Port: 9000, HealthPath: "/healthz", HealthTimeoutSec: 60, CPULimit: 1.0, MemoryLimitMB: 1024}
 	if err := s.UpdateAppConfig(ctx, a.ID, cfg); err != nil {
 		t.Fatal(err)
@@ -95,7 +95,7 @@ func TestUpdateAppConfig(t *testing.T) {
 func TestSetCurrentDeploy(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	if a.CurrentDeployID != nil {
 		t.Fatal("CurrentDeployID should be nil initially")
 	}
@@ -106,7 +106,7 @@ func TestSetCurrentDeploy(t *testing.T) {
 func TestDeployTokenScope(t *testing.T) {
 	s := newTestStore(t)
 	ctx := context.Background()
-	a, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	a, _ := s.CreateApp(ctx, "myapp", AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	tk, err := s.CreateDeployToken(ctx, a.ID, "hash-d", "prod")
 	if err != nil {
 		t.Fatal(err)

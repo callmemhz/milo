@@ -78,7 +78,7 @@ func TestMiddlewareAttachesUserIdentity(t *testing.T) {
 func TestMiddlewareAttachesDeployIdentity(t *testing.T) {
 	s := setupStore(t)
 	ctx := context.Background()
-	app, _ := s.CreateApp(ctx, "myapp", 8080, "/", 30, 0.5, 512)
+	app, _ := s.CreateApp(ctx, "myapp", store.AppConfig{Port: 8080, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 512})
 	plaintext, _ := Generate()
 	_, _ = s.CreateDeployToken(ctx, app.ID, Hash(plaintext), "ci")
 

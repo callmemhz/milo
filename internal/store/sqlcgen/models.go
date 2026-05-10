@@ -19,6 +19,7 @@ type App struct {
 	CurrentDeployID  *int64     `json:"current_deploy_id"`
 	CreatedAt        time.Time  `json:"created_at"`
 	DeletedAt        *time.Time `json:"deleted_at"`
+	Volumes          string     `json:"volumes"`
 }
 
 type AppEnv struct {

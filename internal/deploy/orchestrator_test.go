@@ -52,7 +52,7 @@ func newTestSetup(t *testing.T, appName string) *testSetup {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a, err := s.CreateApp(ctx, appName, 80, "/", 30, 0.5, 128)
+	a, err := s.CreateApp(ctx, appName, store.AppConfig{Port: 80, HealthPath: "/", HealthTimeoutSec: 30, CPULimit: 0.5, MemoryLimitMB: 128})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestHealthCheckFailureLeavesAppUntouched(t *testing.T) {
 
 	// Create a second app configured for port 9999 — nginx won't listen there,
 	// so the health check will time out. Use a short timeout.
-	a2, err := ts.Store.CreateApp(ctx, "dtest4-bad", 9999, "/", 5, 0.5, 128)
+	a2, err := ts.Store.CreateApp(ctx, "dtest4-bad", store.AppConfig{Port: 9999, HealthPath: "/", HealthTimeoutSec: 5, CPULimit: 0.5, MemoryLimitMB: 128})
 	if err != nil {
 		t.Fatal(err)
 	}

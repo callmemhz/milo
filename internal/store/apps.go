@@ -2,9 +2,12 @@ package store
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/callmemhz/milo/internal/store/sqlcgen"
+	"github.com/callmemhz/milo/pkg/api"
 )
 
 type App = sqlcgen.App
@@ -15,16 +18,22 @@ type AppConfig struct {
 	HealthTimeoutSec int64
 	CPULimit         float64
 	MemoryLimitMB    int64
+	Volumes          []api.VolumeSpec
 }
 
-func (s *Store) CreateApp(ctx context.Context, name string, port int64, healthPath string, timeoutSec int64, cpu float64, memMB int64) (App, error) {
+func (s *Store) CreateApp(ctx context.Context, name string, c AppConfig) (App, error) {
+	volsJSON, err := encodeVolumes(c.Volumes)
+	if err != nil {
+		return App{}, err
+	}
 	return s.Q.CreateApp(ctx, sqlcgen.CreateAppParams{
 		Name:             name,
-		Port:             port,
-		HealthPath:       healthPath,
-		HealthTimeoutSec: timeoutSec,
-		CpuLimit:         cpu,
-		MemoryLimitMb:    memMB,
+		Port:             c.Port,
+		HealthPath:       c.HealthPath,
+		HealthTimeoutSec: c.HealthTimeoutSec,
+		CpuLimit:         c.CPULimit,
+		MemoryLimitMb:    c.MemoryLimitMB,
+		Volumes:          volsJSON,
 		CreatedAt:        time.Now().UTC(),
 	})
 }
@@ -46,14 +55,43 @@ func (s *Store) ListAppsByOwner(ctx context.Context, userID int64) ([]App, error
 }
 
 func (s *Store) UpdateAppConfig(ctx context.Context, id int64, c AppConfig) error {
+	volsJSON, err := encodeVolumes(c.Volumes)
+	if err != nil {
+		return err
+	}
 	return s.Q.UpdateAppConfig(ctx, sqlcgen.UpdateAppConfigParams{
 		Port:             c.Port,
 		HealthPath:       c.HealthPath,
 		HealthTimeoutSec: c.HealthTimeoutSec,
 		CpuLimit:         c.CPULimit,
 		MemoryLimitMb:    c.MemoryLimitMB,
+		Volumes:          volsJSON,
 		ID:               id,
 	})
+}
+
+// DecodeVolumes parses the JSON volumes string stored on an App row.
+// Returns nil for empty or "[]".
+func DecodeVolumes(s string) ([]api.VolumeSpec, error) {
+	if s == "" || s == "[]" {
+		return nil, nil
+	}
+	var v []api.VolumeSpec
+	if err := json.Unmarshal([]byte(s), &v); err != nil {
+		return nil, fmt.Errorf("apps.volumes: %w", err)
+	}
+	return v, nil
+}
+
+func encodeVolumes(v []api.VolumeSpec) (string, error) {
+	if len(v) == 0 {
+		return "[]", nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 func (s *Store) SetCurrentDeploy(ctx context.Context, appID, deployID int64) error {

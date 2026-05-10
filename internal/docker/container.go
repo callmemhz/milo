@@ -12,6 +12,14 @@ import (
 	"github.com/docker/go-connections/nat"
 )
 
+// MountSpec is a single bind mount applied to a container.
+// Source is a host filesystem path; Target is the in-container path.
+type MountSpec struct {
+	Source   string
+	Target   string
+	ReadOnly bool
+}
+
 // RunSpec describes how to create and start a container.
 type RunSpec struct {
 	Name        string
@@ -22,7 +30,7 @@ type RunSpec struct {
 	Port        int
 	CPULimit    float64
 	MemoryMB    int64
-	VolumeSrc   string
+	Mounts      []MountSpec
 	PublishPort bool
 }
 
@@ -55,14 +63,13 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 		},
 	}
 
-	if spec.VolumeSrc != "" {
-		hc.Mounts = []mount.Mount{
-			{
-				Type:   mount.TypeVolume,
-				Source: spec.VolumeSrc,
-				Target: "/data",
-			},
-		}
+	for _, m := range spec.Mounts {
+		hc.Mounts = append(hc.Mounts, mount.Mount{
+			Type:     mount.TypeBind,
+			Source:   m.Source,
+			Target:   m.Target,
+			ReadOnly: m.ReadOnly,
+		})
 	}
 
 	// Container config.

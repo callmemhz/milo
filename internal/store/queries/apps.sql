@@ -1,6 +1,6 @@
 -- name: CreateApp :one
-INSERT INTO apps (name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO apps (name, port, health_path, health_timeout_sec, cpu_limit, memory_limit_mb, volumes, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetAppByName :one
@@ -19,7 +19,7 @@ SELECT a.* FROM apps a
   ORDER BY a.id;
 
 -- name: UpdateAppConfig :exec
-UPDATE apps SET port = ?, health_path = ?, health_timeout_sec = ?, cpu_limit = ?, memory_limit_mb = ?
+UPDATE apps SET port = ?, health_path = ?, health_timeout_sec = ?, cpu_limit = ?, memory_limit_mb = ?, volumes = ?
   WHERE id = ?;
 
 -- name: SetCurrentDeploy :exec
