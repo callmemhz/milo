@@ -1,6 +1,6 @@
 # Binaries
-/milo-apps-kit
-/milo-apps-kit-server
+/milo
+/milod
 /bin/
 *.exe
 

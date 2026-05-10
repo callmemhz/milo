@@ -2,7 +2,7 @@
 # Used together with deploy/docker-compose.local.yml.
 #
 # `*.app.test` is RFC 6761 reserved for testing — no chance of clashing with a
-# real domain. Map milo-apps-kit.test and *.app.test to the test machine's IP via the
+# real domain. Map milo.test and *.app.test to the test machine's IP via the
 # host's /etc/hosts (or a wildcard DNS resolver if you have one).
 #
 # Subdomain extraction: for `myapp.app.test` the labels are:
@@ -16,8 +16,8 @@
     admin off
 }
 
-http://milo-apps-kit.test {
-    reverse_proxy milo-apps-kit-control-plane:8000
+http://milo.test {
+    reverse_proxy milo-control-plane:8000
 }
 
 http://*.app.test {

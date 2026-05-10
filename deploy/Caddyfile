@@ -2,8 +2,8 @@
     email admin@example.com
 }
 
-milo-apps-kit.example.com {
-    reverse_proxy milo-apps-kit-control-plane:8000
+milo.example.com {
+    reverse_proxy milo-control-plane:8000
 }
 
 *.app.example.com {
