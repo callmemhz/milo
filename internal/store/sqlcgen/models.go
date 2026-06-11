@@ -8,6 +8,25 @@ import (
 	"time"
 )
 
+type Addon struct {
+	ID            int64      `json:"id"`
+	Name          string     `json:"name"`
+	Engine        string     `json:"engine"`
+	Version       string     `json:"version"`
+	CpuLimit      float64    `json:"cpu_limit"`
+	MemoryLimitMb int64      `json:"memory_limit_mb"`
+	Password      string     `json:"password"`
+	Status        string     `json:"status"`
+	ContainerName *string    `json:"container_name"`
+	CreatedAt     time.Time  `json:"created_at"`
+	DeletedAt     *time.Time `json:"deleted_at"`
+}
+
+type AddonOwner struct {
+	AddonID int64 `json:"addon_id"`
+	UserID  int64 `json:"user_id"`
+}
+
 type App struct {
 	ID               int64      `json:"id"`
 	Name             string     `json:"name"`
@@ -45,6 +64,14 @@ type Deployment struct {
 	ContainerName *string    `json:"container_name"`
 	CreatedAt     time.Time  `json:"created_at"`
 	FinishedAt    *time.Time `json:"finished_at"`
+}
+
+type Link struct {
+	ID        int64     `json:"id"`
+	AppID     int64     `json:"app_id"`
+	AddonID   int64     `json:"addon_id"`
+	Alias     string    `json:"alias"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Token struct {

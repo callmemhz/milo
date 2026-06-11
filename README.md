@@ -74,6 +74,35 @@ breaks routing. Most modern frameworks already follow this convention
 This is the same contract Heroku, Cloud Run, Railway, Render, and Fly use,
 so an app that runs on any of those typically runs here unchanged.
 
+## Add-ons (postgres, redis)
+
+Apps often need a database or cache. Milo runs these as **add-ons**:
+platform-pinned images, generated credentials, persistent volume, and an
+isolated per-add-on network. Users pick an engine + major version, never a
+raw image.
+
+```bash
+milo addons create mydb --engine postgres            # standalone add-on
+milo addons create cache --engine redis --attach web # create + link in one step
+milo addons link mydb web                            # link to an app
+milo addons unlink mydb web
+milo addons list / get / logs / restart
+```
+
+Linking injects a connection URL into the app as platform env (like `PORT`,
+not stored in the app's own env) and redeploys it:
+
+- postgres → `DATABASE_URL=postgres://app:<password>@mydb:5432/app?sslmode=disable`
+- redis → `REDIS_URL=redis://:<password>@cache:6379/0`
+- `--as CACHE` renames the var to `CACHE_URL` (needed when linking two
+  add-ons of the same engine to one app)
+
+Each add-on lives on its own bridge network (`milo-addon-<name>`); only linked
+apps are attached to it, so reachability — not just the password — is the
+access boundary. Add-ons are stateful and restart in place (brief downtime),
+keeping their data volume. Deleting an add-on with active links requires
+`--force`, which unlinks and redeploys the affected apps.
+
 ## Deploy contract
 
 A typical CI step (GitHub Actions example):
@@ -125,6 +154,8 @@ This is a v1. Things that are **in**:
 - Per-app env, CPU/memory limits, `/data` volume, health check, restart policy
 - Rolling deploy with last-write-wins concurrency
 - Auto subdomain (`{app}.app.example.com`) with wildcard cert (DNS-01)
+- Add-ons (`postgres`, `redis`) with per-add-on network isolation and app
+  `link`
 
 Things deliberately **out** of v1 (roadmap):
 
@@ -132,8 +163,8 @@ Things deliberately **out** of v1 (roadmap):
 - Internal builders / `git push` deploy (CI is the only trigger)
 - Custom per-app domains
 - Replicas / horizontal scaling
-- Per-app network isolation + service `link`
-- Managed services (`postgres`, `redis`, …)
+- Per-link database credentials, password rotation, backups, postgres major
+  upgrades
 - `apps exec` for shell access
 - OIDC / SSO
 

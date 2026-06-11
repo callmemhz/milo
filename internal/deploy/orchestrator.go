@@ -93,19 +93,40 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (store.Dep
 	// that lets Caddy reach the container at a fixed address.
 	env["PORT"] = strconv.Itoa(int(a.Port))
 
+	// Linked addons: derive connection env (never stored in app_env — the
+	// links table is the single source of truth, so unlink/rotation can't
+	// leave stale values) and collect the per-addon networks to join.
+	links, err := o.Store.ListLinksForApp(ctx, req.AppID)
+	if err != nil {
+		return o.failExisting(ctx, dep.ID, "internal", err)
+	}
+	var extraNets []string
+	for _, l := range links {
+		env[LinkEnvKey(l.Engine, l.Alias)] = ConnectionURL(l.Engine, l.AddonName, l.Password)
+		netName := AddonNetworkName(l.AddonName)
+		if err := o.Docker.EnsureNetworkNamed(deployCtx, netName, map[string]string{
+			"milo.managed": "true",
+			"milo.addon":   l.AddonName,
+		}); err != nil {
+			return o.failExisting(ctx, dep.ID, "docker_error", err)
+		}
+		extraNets = append(extraNets, netName)
+	}
+
 	// Use the original image ref to start the container — the image is already
 	// pulled locally and Docker resolves it by tag. The digest is stored in DB
 	// only for auditability.
 	if _, err := o.Docker.Run(deployCtx, docker.RunSpec{
-		Name:        containerName,
-		Alias:       req.AppName,
-		Image:       req.ImageRef,
-		Env:         env,
-		Port:        int(a.Port),
-		CPULimit:    a.CpuLimit,
-		MemoryMB:    a.MemoryLimitMb,
-		VolumeSrc:   volumeName,
-		PublishPort: o.PublishPortForTests,
+		Name:          containerName,
+		Alias:         req.AppName,
+		Image:         req.ImageRef,
+		Env:           env,
+		Port:          int(a.Port),
+		CPULimit:      a.CpuLimit,
+		MemoryMB:      a.MemoryLimitMb,
+		VolumeSrc:     volumeName,
+		PublishPort:   o.PublishPortForTests,
+		ExtraNetworks: extraNets,
 	}); err != nil {
 		return o.failExisting(ctx, dep.ID, "docker_error", err)
 	}
@@ -224,6 +245,10 @@ func (o *Orchestrator) DeleteApp(ctx context.Context, appID int64, deleteVolume 
 	}
 	if deleteVolume {
 		_ = o.Docker.RemoveVolume(ctx, fmt.Sprintf("milo-app-%s-data", a.Name), true)
+	}
+	// Links die with the app; the addons themselves stay up.
+	if err := o.Store.DeleteLinksForApp(ctx, appID); err != nil {
+		return err
 	}
 	return o.Store.SoftDeleteApp(ctx, appID)
 }

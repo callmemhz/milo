@@ -19,6 +19,8 @@ type Deployer interface {
 	Deploy(ctx context.Context, req deploy.DeployRequest) (store.Deployment, error)
 	Restart(ctx context.Context, appID int64) (store.Deployment, error)
 	DeleteApp(ctx context.Context, appID int64, deleteVolume bool) error
+	ProvisionAddon(ctx context.Context, addonID int64) error
+	DeleteAddon(ctx context.Context, addonID int64, deleteVolume bool) error
 	Locks() *deploy.LockManager
 }
 
@@ -56,6 +58,7 @@ func (s *Server) Router() http.Handler {
 		s.registerDeploymentsRoutes(r)
 		s.registerRuntimeRoutes(r)
 		s.registerAppTokensRoutes(r)
+		s.registerAddonsRoutes(r)
 	})
 
 	return r

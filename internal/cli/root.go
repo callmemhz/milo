@@ -53,6 +53,7 @@ func RootCmd() *cobra.Command {
 	root.AddCommand(authCmd())
 	root.AddCommand(contextCmd())
 	root.AddCommand(appsCmd(getClient))
+	root.AddCommand(addonsCmd(getClient))
 	root.AddCommand(envCmd(getClient))
 	root.AddCommand(deployCmd(getClient))
 	root.AddCommand(deploymentsCmd(getClient))
