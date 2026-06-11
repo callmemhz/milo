@@ -61,6 +61,12 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 		writeError(w, api.New(api.ErrNotFound, "no container"))
 		return
 	}
+	s.streamLogs(w, r, *d.ContainerName)
+}
+
+// streamLogs streams a container's logs to the response, flushing as chunks
+// arrive. Shared by app and add-on log endpoints.
+func (s *Server) streamLogs(w http.ResponseWriter, r *http.Request, containerName string) {
 	if s.Docker == nil {
 		writeError(w, api.New(api.ErrInternal, "docker not configured"))
 		return
@@ -71,7 +77,7 @@ func (s *Server) handleLogs(w http.ResponseWriter, r *http.Request) {
 		tail = "100"
 	}
 
-	rdr, err := s.Docker.Logs(r.Context(), *d.ContainerName, follow, tail)
+	rdr, err := s.Docker.Logs(r.Context(), containerName, follow, tail)
 	if err != nil {
 		writeError(w, err)
 		return

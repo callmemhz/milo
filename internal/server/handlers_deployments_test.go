@@ -26,6 +26,15 @@ type fakeDeployer struct {
 	deleteCalled  bool
 	deleteVolume  bool
 	locks         *deploy.LockManager
+
+	provisionErr      error
+	provisionCalled   bool
+	lastProvisionID   int64
+	deleteAddonErr    error
+	deleteAddonCalled bool
+	deleteAddonVolume bool
+	provisionStore    *store.Store // when set, ProvisionAddon marks the addon running
+	deleteAddonStore  *store.Store // when set, DeleteAddon removes links + soft-deletes
 }
 
 func newFakeDeployer() *fakeDeployer {
@@ -51,6 +60,29 @@ func (f *fakeDeployer) DeleteApp(_ context.Context, _ int64, deleteVolume bool) 
 	f.deleteCalled = true
 	f.deleteVolume = deleteVolume
 	return f.deleteErr
+}
+
+func (f *fakeDeployer) ProvisionAddon(ctx context.Context, addonID int64) error {
+	f.provisionCalled = true
+	f.lastProvisionID = addonID
+	if f.provisionErr == nil && f.provisionStore != nil {
+		addon, err := f.provisionStore.GetAddonByID(ctx, addonID)
+		if err != nil {
+			return err
+		}
+		_ = f.provisionStore.UpdateAddonStatus(ctx, addonID, store.AddonRunning, "addon-"+addon.Name)
+	}
+	return f.provisionErr
+}
+
+func (f *fakeDeployer) DeleteAddon(ctx context.Context, addonID int64, deleteVolume bool) error {
+	f.deleteAddonCalled = true
+	f.deleteAddonVolume = deleteVolume
+	if f.deleteAddonErr == nil && f.deleteAddonStore != nil {
+		_ = f.deleteAddonStore.DeleteLinksForAddon(ctx, addonID)
+		_ = f.deleteAddonStore.SoftDeleteAddon(ctx, addonID)
+	}
+	return f.deleteAddonErr
 }
 
 func (f *fakeDeployer) Locks() *deploy.LockManager { return f.locks }

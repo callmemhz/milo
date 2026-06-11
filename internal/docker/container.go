@@ -24,6 +24,18 @@ type RunSpec struct {
 	MemoryMB    int64
 	VolumeSrc   string
 	PublishPort bool
+
+	// Network overrides the primary network the container joins
+	// (default: the client's milo network).
+	Network string
+	// ExtraNetworks are additional networks to attach before start, with the
+	// same aliases as the primary network. Used to give app containers access
+	// to the per-addon networks of their linked add-ons.
+	ExtraNetworks []string
+	// VolumeTarget is the mount point for VolumeSrc (default: /data).
+	VolumeTarget string
+	// Labels overrides the container labels (default: {"milo.app": Alias}).
+	Labels map[string]string
 }
 
 // ContainerInfo holds summarised state for a container.
@@ -56,20 +68,29 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 	}
 
 	if spec.VolumeSrc != "" {
+		target := spec.VolumeTarget
+		if target == "" {
+			target = "/data"
+		}
 		hc.Mounts = []mount.Mount{
 			{
 				Type:   mount.TypeVolume,
 				Source: spec.VolumeSrc,
-				Target: "/data",
+				Target: target,
 			},
 		}
+	}
+
+	labels := spec.Labels
+	if labels == nil {
+		labels = map[string]string{"milo.app": spec.Alias}
 	}
 
 	// Container config.
 	cfg := &container.Config{
 		Image:  spec.Image,
 		Env:    env,
-		Labels: map[string]string{"milo.app": spec.Alias},
+		Labels: labels,
 	}
 	if len(spec.Cmd) > 0 {
 		cfg.Cmd = spec.Cmd
@@ -86,10 +107,14 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 		}
 	}
 
-	// Networking config: attach to milo network with aliases.
+	// Networking config: attach to the primary network with aliases.
+	primaryNet := spec.Network
+	if primaryNet == "" {
+		primaryNet = c.network
+	}
 	netCfg := &dockernetwork.NetworkingConfig{
 		EndpointsConfig: map[string]*dockernetwork.EndpointSettings{
-			c.network: {
+			primaryNet: {
 				Aliases: []string{spec.Alias, spec.Name},
 			},
 		},
@@ -98,6 +123,14 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 	resp, err := c.cli.ContainerCreate(ctx, cfg, hc, netCfg, nil, spec.Name)
 	if err != nil {
 		return "", fmt.Errorf("container create: %w", err)
+	}
+
+	// Attach extra networks before start so DNS is in place from boot.
+	for _, n := range spec.ExtraNetworks {
+		if err := c.ConnectNetwork(ctx, n, resp.ID, []string{spec.Alias, spec.Name}); err != nil {
+			_ = c.cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{Force: true})
+			return "", fmt.Errorf("network connect %s: %w", n, err)
+		}
 	}
 
 	if err := c.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
@@ -155,6 +188,16 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerInfo
 // ListOnNetwork returns all containers (running or stopped) on the milo network.
 func (c *Client) ListOnNetwork(ctx context.Context) ([]container.Summary, error) {
 	args := filters.NewArgs(filters.Arg("network", c.network))
+	return c.cli.ContainerList(ctx, container.ListOptions{
+		All:     true,
+		Filters: args,
+	})
+}
+
+// ListByLabelKey returns all containers (running or stopped) carrying the
+// given label key, regardless of which network they are on.
+func (c *Client) ListByLabelKey(ctx context.Context, key string) ([]container.Summary, error) {
+	args := filters.NewArgs(filters.Arg("label", key))
 	return c.cli.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: args,

@@ -58,6 +58,45 @@ type AppResp struct {
 	Owners           []string `json:"owners"`
 }
 
+type CreateAddonReq struct {
+	Name          string   `json:"name"`
+	Engine        string   `json:"engine"`
+	Version       string   `json:"version,omitempty"`
+	CPULimit      float64  `json:"cpu_limit,omitempty"`
+	MemoryLimitMB int64    `json:"memory_limit_mb,omitempty"`
+	Owners        []string `json:"owners,omitempty"`
+}
+
+type AddonResp struct {
+	ID            int64    `json:"id"`
+	Name          string   `json:"name"`
+	Engine        string   `json:"engine"`
+	Version       string   `json:"version"`
+	Status        string   `json:"status"`
+	CPULimit      float64  `json:"cpu_limit"`
+	MemoryLimitMB int64    `json:"memory_limit_mb"`
+	Owners        []string `json:"owners"`
+	LinkedApps    []string `json:"linked_apps"`
+	// URL is the connection string (including the password). Only present on
+	// single-addon GET responses, never in lists.
+	URL string `json:"url,omitempty"`
+}
+
+type CreateLinkReq struct {
+	Addon string `json:"addon"`
+	// Alias prefixes the injected env var: alias CACHE → CACHE_URL. Empty
+	// means the engine default (DATABASE_URL / REDIS_URL).
+	Alias string `json:"alias,omitempty"`
+}
+
+type LinkResp struct {
+	App    string `json:"app"`
+	Addon  string `json:"addon"`
+	Engine string `json:"engine"`
+	Alias  string `json:"alias,omitempty"`
+	EnvKey string `json:"env_key"`
+}
+
 type EnvPatchReq struct {
 	Set   map[string]string `json:"set,omitempty"`
 	Unset []string          `json:"unset,omitempty"`

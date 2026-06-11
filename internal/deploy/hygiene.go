@@ -68,6 +68,51 @@ func (h *Hygiene) Run(ctx context.Context) error {
 		}
 		// current — keep
 	}
+
+	return h.runAddons(ctx)
+}
+
+// runAddons mirrors the app cleanup for managed addons:
+// 1. Addons stuck in "provisioning" crashed mid-provision → mark failed
+// 2. Containers labelled milo.addon whose addon is gone → remove
+// 3. Per-addon networks whose addon is gone → force-remove
+func (h *Hygiene) runAddons(ctx context.Context) error {
+	inflight, err := h.Store.ListInflightAddons(ctx)
+	if err != nil {
+		return err
+	}
+	for _, addon := range inflight {
+		cn := ""
+		if addon.ContainerName != nil {
+			cn = *addon.ContainerName
+		}
+		_ = h.Store.UpdateAddonStatus(ctx, addon.ID, store.AddonFailed, cn)
+	}
+
+	containers, err := h.Docker.ListByLabelKey(ctx, "milo.addon")
+	if err != nil {
+		return err
+	}
+	for _, c := range containers {
+		addonName := c.Labels["milo.addon"]
+		primary := containerPrimaryName(c.Names)
+		if _, err := h.Store.GetAddonByName(ctx, addonName); err != nil {
+			h.Log.Info("removing orphan addon container", "container", primary, "addon", addonName)
+			_ = h.Docker.Remove(ctx, primary)
+		}
+	}
+
+	networks, err := h.Docker.ListNetworksByLabelKey(ctx, "milo.addon")
+	if err != nil {
+		return err
+	}
+	for name, labels := range networks {
+		addonName := labels["milo.addon"]
+		if _, err := h.Store.GetAddonByName(ctx, addonName); err != nil {
+			h.Log.Info("removing orphan addon network", "network", name, "addon", addonName)
+			_ = h.Docker.ForceRemoveNetwork(ctx, name)
+		}
+	}
 	return nil
 }
 
