@@ -1,0 +1,67 @@
+{{define "title"}}{{call .T "acct.title"}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<p class="crumb"><a href="/console">{{call .T "common.back_overview"}}</a></p>
+<h1>{{call .T "acct.title"}}</h1>
+
+<section class="card">
+  <dl class="specs">
+    <div class="cell"><dt>{{call .T "col.name"}}</dt><dd class="mono">{{.User}}</dd></div>
+    <div class="cell"><dt>{{call .T "col.role"}}</dt><dd>{{if .Admin}}admin{{else}}user{{end}}</dd></div>
+  </dl>
+</section>
+
+<h1>{{call .T "acct.cli"}}</h1>
+<section class="card">
+  <p class="muted" style="margin-top:0">{{call .T "acct.cli_hint"}}</p>
+
+  {{if .NewToken}}
+  <div class="tokenbox">
+    <p class="flash" style="margin-bottom:8px">{{call .T "acct.new_token"}}</p>
+    <code class="conn" id="tok">{{.NewToken}}</code>
+    <p class="muted" style="margin:12px 0 4px">{{call .T "acct.login_cmd"}}</p>
+    <code class="conn" id="cmd">{{.LoginCmd}}</code>
+    <button type="button" class="btn" style="margin-top:8px" onclick="copyText('cmd')">copy</button>
+  </div>
+  {{end}}
+
+  <form method="post" action="/console/account/tokens" class="form-row" style="margin-top:14px">
+    <input type="hidden" name="_csrf" value="{{.CSRF}}">
+    <input name="name" placeholder="{{call .T "acct.token_name"}}">
+    <button type="submit">{{call .T "acct.create_token"}}</button>
+  </form>
+</section>
+
+<h1>{{call .T "acct.tokens"}}</h1>
+<section class="card pad0">
+  <table class="tbl">
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.created"}}</th><th>{{call .T "acct.last_used"}}</th><th>{{call .T "col.state"}}</th><th></th></tr></thead>
+    <tbody>
+    {{range .Tokens}}
+      <tr>
+        <td>{{if .Name}}{{.Name}}{{else}}<span class="muted">—</span>{{end}}</td>
+        <td class="muted">{{.Created}}</td>
+        <td class="muted">{{.LastUsed}}</td>
+        <td>{{if .Revoked}}<span class="no ico">{{call $root.T "acct.revoked"}}</span>{{else}}<span class="yes ico">{{call $root.T "acct.active"}}</span>{{end}}</td>
+        <td class="ta-r">
+          {{if not .Revoked}}
+          <form method="post" action="/console/account/tokens/revoke" class="inline"
+                onsubmit="return confirm({{call $root.T "acct.confirm_revoke"}})">
+            <input type="hidden" name="_csrf" value="{{$root.CSRF}}">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <button type="submit" class="btn danger">{{call $root.T "acct.revoke"}}</button>
+          </form>
+          {{end}}
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted">{{call .T "acct.no_tokens"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<script>
+function copyText(id){var el=document.getElementById(id);navigator.clipboard&&navigator.clipboard.writeText(el.textContent)}
+</script>
+{{end}}

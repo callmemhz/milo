@@ -1,0 +1,54 @@
+{{define "title"}}{{call .T "vol.title"}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<h1>{{call .T "vol.title"}}</h1>
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
+
+<form method="post" action="/console/admin/volumes/delete" id="vol-form" onsubmit="return confirmBatch()">
+  <input type="hidden" name="_csrf" value="{{.CSRF}}">
+  <div class="bulkbar">
+    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> {{call .T "common.select_all"}}</label>
+    <label class="chk small"><input type="checkbox" name="force"> {{call .T "vol.force"}}</label>
+    <button type="submit" class="btn danger" id="bulk-del" disabled>{{call .T "common.delete_sel"}} (<span id="cnt">0</span>)</button>
+  </div>
+  <section class="card pad0">
+    <table class="tbl">
+      <thead><tr><th class="ta-c">{{call .T "col.select"}}</th><th>{{call .T "vol.volname"}}</th><th>{{call .T "col.type"}}</th><th>{{call .T "col.instance"}}</th><th>{{call .T "col.size"}}</th><th>{{call .T "col.refs"}}</th><th>{{call .T "col.state"}}</th></tr></thead>
+      <tbody>
+      {{range .Volumes}}
+        <tr>
+          <td class="ta-c"><input type="checkbox" class="row-ck" name="names" value="{{.Name}}" onclick="updateCount()"></td>
+          <td class="mono">{{.Name}}</td>
+          <td>{{.Kind}}</td>
+          <td>
+            {{if .Instance}}
+              {{if eq .Kind "app"}}<a href="/console/apps/{{.Instance}}" class="mono">{{.Instance}}</a>
+              {{else}}<a href="/console/addons/{{.Instance}}" class="mono">{{.Instance}}</a>{{end}}
+            {{else}}<span class="muted">—</span>{{end}}
+          </td>
+          <td>{{.Size}}</td>
+          <td>{{if .InUse}}<span class="yes ico">{{call $root.T "vol.in_use"}}</span>{{else}}<span class="muted">{{call $root.T "vol.idle"}}</span>{{end}}</td>
+          <td>{{if .Orphan}}<span class="no ico">{{call $root.T "vol.orphan"}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+        </tr>
+      {{else}}
+        <tr><td colspan="7" class="muted">{{call .T "vol.none"}}</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+  </section>
+</form>
+<p class="muted">{{call .T "vol.note"}}</p>
+
+<script>
+function rows(){return document.querySelectorAll('.row-ck')}
+function updateCount(){
+  var n=0; rows().forEach(function(c){if(c.checked)n++});
+  document.getElementById('cnt').textContent=n;
+  document.getElementById('bulk-del').disabled = n===0;
+  var all=document.getElementById('sel-all'); all.checked = n>0 && n===rows().length;
+}
+function toggleAll(src){rows().forEach(function(c){c.checked=src.checked}); updateCount()}
+function confirmBatch(){return confirm({{call .T "vol.confirm"}})}
+</script>
+{{end}}

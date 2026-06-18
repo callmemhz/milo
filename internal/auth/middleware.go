@@ -57,6 +57,10 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 				writeAPIError(w, http.StatusUnauthorized, api.ErrUnauthorized, "user gone")
 				return
 			}
+			if frozen, _ := a.Store.IsUserFrozen(r.Context(), u.ID); frozen {
+				writeAPIError(w, http.StatusForbidden, api.ErrForbidden, "account frozen")
+				return
+			}
 			id.User = &u
 		case "deploy":
 			if tk.AppID == nil {

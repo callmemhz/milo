@@ -1,0 +1,38 @@
+{{define "base"}}<!doctype html>
+<html lang="{{.Lang}}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}milo console{{end}}</title>
+  <link rel="stylesheet" href="/console/assets/styles.css">
+  <script src="/console/assets/htmx.min.js"></script>
+  <script src="/console/assets/htmx-ext-sse.js"></script>
+</head>
+<body>
+{{$lang := .Lang}}
+{{if .User}}
+  <header class="topbar">
+    <a class="brand" href="/console">milo</a>
+    <nav>
+      <a href="/console">{{call .T "nav.overview"}}</a>
+      {{if .Admin}}<a href="/console/admin/instances">{{call .T "nav.all_instances"}}</a><a href="/console/admin">{{call .T "nav.host"}}</a><a href="/console/admin/images">{{call .T "nav.images"}}</a><a href="/console/admin/volumes">{{call .T "nav.volumes"}}</a><a href="/console/users">{{call .T "nav.users"}}</a>{{end}}
+      <a href="/console/account">{{call .T "nav.account"}}</a>
+      <span class="langsel"><a href="/console/lang?lang=en" class="{{if eq $lang "en"}}active{{end}}">EN</a><a href="/console/lang?lang=zh" class="{{if eq $lang "zh"}}active{{end}}">中文</a></span>
+      <span class="who">{{.User}}{{if .Admin}} · admin{{end}}</span>
+      <form method="post" action="/console/logout" class="inline">
+        <input type="hidden" name="_csrf" value="{{.CSRF}}">
+        <button class="link" type="submit">{{call .T "nav.logout"}}</button>
+      </form>
+    </nav>
+  </header>
+{{else}}
+  <header class="topbar guest">
+    <a class="brand" href="/console">milo</a>
+    <span class="langsel"><a href="/console/lang?lang=en" class="{{if eq $lang "en"}}active{{end}}">EN</a><a href="/console/lang?lang=zh" class="{{if eq $lang "zh"}}active{{end}}">中文</a></span>
+  </header>
+{{end}}
+  <main>
+    {{block "content" .}}{{end}}
+  </main>
+</body>
+</html>{{end}}

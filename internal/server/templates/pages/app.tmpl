@@ -1,0 +1,52 @@
+{{define "title"}}{{.Name}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<p class="crumb"><a href="/console">{{call .T "common.back_overview"}}</a></p>
+<div class="app-head">
+  <h1>{{.Name}}</h1>
+  <span class="badge state-{{.State}}">{{.State}}</span>
+</div>
+
+<section class="card">
+  <h2>{{call .T "sec.overview"}}</h2>
+  <dl class="specs">
+    <div class="cell"><dt>{{call .T "f.state"}}</dt><dd>{{.State}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.uptime"}}</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.spec"}}</dt><dd>{{.Spec}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.port"}}</dt><dd>{{.Port}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.image"}}</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
+    {{if .Ref}}<div class="cell"><dt>{{call .T "f.ref"}}</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
+    <div class="cell"><dt>{{call .T "f.volume_usage"}}</dt><dd>{{.Volume}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.exposed"}}</dt><dd><span class="tag use">{{call .T "app.exposed_http"}}</span></dd></div>
+    {{if .Address}}<div class="cell"><dt>{{call .T "f.address"}}</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
+  </dl>
+  <div class="live" hx-ext="sse" sse-connect="/console/apps/{{.Name}}/stats/stream">
+    <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">—</span></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>{{call .T "sec.linked_addons"}}</h2>
+  {{if .Links}}
+  <table class="tbl">
+    <thead><tr><th>{{call .T "col.addon"}}</th><th>{{call .T "col.engine"}}</th><th>{{call .T "col.alias"}}</th></tr></thead>
+    <tbody>
+    {{range .Links}}
+      <tr>
+        <td><a href="/console/addons/{{.Addon}}" class="mono">{{.Addon}}</a></td>
+        <td>{{.Engine}}</td>
+        <td class="mono">{{.Alias}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="muted">{{call .T "app.no_links"}}</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>{{call .T "sec.live_logs"}}</h2>
+  <div hx-ext="sse" sse-connect="/console/apps/{{.Name}}/logs/stream">
+    <pre class="logs" sse-swap="message" hx-swap="beforeend"></pre>
+  </div>
+</section>
+{{end}}

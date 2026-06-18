@@ -1,0 +1,45 @@
+{{define "title"}}{{call .T "nav.all_instances"}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<h1>{{call .T "inst.title"}}</h1>
+<section class="card pad0">
+  <table class="tbl">
+    <thead><tr><th>{{call .T "col.app"}}</th><th>{{call .T "col.owner"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th></tr></thead>
+    <tbody>
+    {{range .Apps}}
+      <tr>
+        <td><a href="/console/apps/{{.Name}}" class="mono">{{.Name}}</a></td>
+        <td>{{.Owners}}</td>
+        <td><span class="badge state-{{.State}}">{{.State}}</span></td>
+        <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
+        <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
+      </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted">{{call .T "inst.no_apps"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<h1>{{call .T "inst.all_addons"}}</h1>
+<section class="card pad0">
+  <table class="tbl">
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.owner"}}</th><th>{{call .T "col.engine"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th><th>{{call .T "col.external"}}</th></tr></thead>
+    <tbody>
+    {{range .Addons}}
+      <tr>
+        <td><a href="/console/addons/{{.Name}}" class="mono">{{.Name}}</a></td>
+        <td>{{.Owners}}</td>
+        <td>{{.Engine}}</td>
+        <td><span class="badge state-{{.Status}}">{{.Status}}</span></td>
+        <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
+        <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
+        <td>{{if .Exposed}}<span class="yes ico">{{call $root.T "common.on"}}</span>{{else}}<span class="no ico">{{call $root.T "common.off"}}</span>{{end}}</td>
+      </tr>
+    {{else}}
+      <tr><td colspan="7" class="muted">{{call .T "inst.no_addons"}}</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+{{end}}

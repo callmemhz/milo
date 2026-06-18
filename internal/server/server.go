@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"html/template"
 	"io"
 	"net/http"
 	"time"
@@ -40,6 +41,14 @@ type Server struct {
 	// RootDomain is the public DNS root for apps and exposed addons
 	// (e.g. app.example.com). Used to build exposed-addon external URLs.
 	RootDomain string
+
+	// Runtime backs the web console's live uptime/load views. Set by main to the
+	// docker client; nil in unit tests (console degrades to state-only).
+	Runtime ContainerRuntime
+	// CookieSecure marks session cookies Secure (set in production behind TLS).
+	CookieSecure bool
+
+	tmpls map[string]*template.Template // parsed lazily by initConsole
 }
 
 func New(s *store.Store, version string) *Server {
@@ -51,6 +60,8 @@ func (s *Server) Router() http.Handler {
 
 	r.Get("/v1/healthz", s.handleHealthz)
 	r.Get("/v1/version", s.handleVersion)
+
+	s.registerConsoleRoutes(r)
 
 	r.Group(func(r chi.Router) {
 		r.Use(s.Auth.Middleware)

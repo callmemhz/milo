@@ -1,0 +1,50 @@
+{{define "title"}}{{call .T "img.title"}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<h1>{{call .T "img.title"}}</h1>
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
+
+<form method="post" action="/console/admin/images/delete" id="img-form" onsubmit="return confirmBatch()">
+  <input type="hidden" name="_csrf" value="{{.CSRF}}">
+  <div class="bulkbar">
+    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> {{call .T "common.select_all"}}</label>
+    <label class="chk small"><input type="checkbox" name="force"> {{call .T "img.force"}}</label>
+    <button type="submit" class="btn danger" id="bulk-del" disabled>{{call .T "common.delete_sel"}} (<span id="cnt">0</span>)</button>
+  </div>
+  <section class="card pad0">
+    <table class="tbl">
+      <thead><tr><th class="ta-c">{{call .T "col.select"}}</th><th>标签 / Tag</th><th>{{call .T "col.id"}}</th><th>{{call .T "col.size"}}</th><th>{{call .T "col.usage"}}</th></tr></thead>
+      <tbody>
+      {{range .Images}}
+        <tr>
+          <td class="ta-c"><input type="checkbox" class="row-ck" name="ids" value="{{.ID}}" onclick="updateCount()"></td>
+          <td class="mono">{{.Tags}}</td>
+          <td class="mono muted">{{.Short}}</td>
+          <td>{{.Size}}</td>
+          <td>
+            {{if .InUse}}<span class="tag use" title="{{.UsedBy}}">{{call $root.T "img.in_use"}}</span> <span class="muted">{{.UsedBy}}</span>
+            {{else}}<span class="tag free">{{call $root.T "img.unused"}}</span>{{end}}
+          </td>
+        </tr>
+      {{else}}
+        <tr><td colspan="5" class="muted">{{call .T "img.none"}}</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+  </section>
+</form>
+<p class="muted">{{call .T "img.note"}}</p>
+
+<script>
+function rows(){return document.querySelectorAll('.row-ck')}
+function updateCount(){
+  var n=0; rows().forEach(function(c){if(c.checked)n++});
+  document.getElementById('cnt').textContent=n;
+  document.getElementById('bulk-del').disabled = n===0;
+  var all=document.getElementById('sel-all'); all.checked = n>0 && n===rows().length;
+}
+function toggleAll(src){rows().forEach(function(c){c.checked=src.checked}); updateCount()}
+function confirmBatch(){return confirm({{call .T "img.confirm"}})}
+</script>
+{{end}}

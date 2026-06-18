@@ -1,0 +1,57 @@
+{{define "title"}}{{call .T "nav.host"}} · milo console{{end}}
+{{define "content"}}
+{{$root := .}}
+<h1>{{call .T "admin.host_status"}}</h1>
+{{with .Host}}
+<section class="card">
+  <h2>{{call $root.T "admin.host"}}</h2>
+  <dl class="specs">
+    <div class="cell"><dt>{{call $root.T "admin.docker_ver"}}</dt><dd>{{.ServerVersion}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.os"}}</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.ncpu"}}</dt><dd>{{.NCPU}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.mem_total"}}</dt><dd>{{.MemTotal}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.containers"}}</dt><dd>{{.ContainersRunning}} {{call $root.T "admin.running_of"}} {{.Containers}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.images_cnt"}}</dt><dd>{{.Images}}</dd></div>
+  </dl>
+</section>
+{{else}}
+<p class="muted">{{call .T "admin.no_host"}}</p>
+{{end}}
+
+{{with .Load}}
+<section class="card">
+  <h2>{{call $root.T "admin.load"}}</h2>
+  {{meter (call $root.T "f.cpu") .LoadPct .LoadNum}}
+  {{if .MemNum}}{{meter (call $root.T "f.mem") .MemPct .MemNum}}{{end}}
+  <p class="muted" style="margin-top:8px;font-size:12px">{{call $root.T "admin.load_note"}}</p>
+</section>
+{{end}}
+
+{{with .Disk}}
+<section class="card">
+  <h2>{{call $root.T "admin.disk"}}</h2>
+  <dl class="specs">
+    <div class="cell"><dt>{{call $root.T "admin.disk_images"}}</dt><dd>{{.Images}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_ctr"}}</dt><dd>{{.Containers}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_vol"}}</dt><dd>{{.Volumes}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_cache"}}</dt><dd>{{.BuildCache}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_total"}}</dt><dd>{{.Total}}</dd></div>
+  </dl>
+  {{with $root.DiskFree}}
+  <div style="margin-top:12px">{{meter (call $root.T "f.disk") .DiskPct .DiskNum}}</div>
+  {{end}}
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/images">{{call $root.T "admin.manage_imgs"}}</a> · <a href="/console/admin/volumes">{{call $root.T "admin.manage_vols"}}</a></p>
+</section>
+{{end}}
+
+<h1>{{call .T "admin.resources"}}</h1>
+<section class="card">
+  <dl class="specs">
+    <div class="cell"><dt>App</dt><dd>{{.AppCount}}</dd></div>
+    <div class="cell"><dt>Add-on</dt><dd>{{.AddonCount}}</dd></div>
+    <div class="cell"><dt>{{call .T "nav.users"}}</dt><dd>{{.UserCount}}</dd></div>
+    <div class="cell"><dt>{{call .T "admin.cp_version"}}</dt><dd>{{.Version}}</dd></div>
+  </dl>
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/instances">{{call .T "admin.view_all"}}</a></p>
+</section>
+{{end}}

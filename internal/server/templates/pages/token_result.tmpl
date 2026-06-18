@@ -1,0 +1,15 @@
+{{define "title"}}{{call .T "users.issue_token"}} · milo console{{end}}
+{{define "content"}}
+<p class="crumb"><a href="/console/users">← {{call .T "nav.users"}}</a></p>
+<h1>{{.ForUser}}</h1>
+<section class="card">
+  <p class="flash" style="margin-top:0">{{call .T "acct.new_token"}}</p>
+  <code class="conn" id="tok">{{.NewToken}}</code>
+  <p class="muted" style="margin:12px 0 4px">{{call .T "acct.login_cmd"}}</p>
+  <code class="conn" id="cmd">{{.LoginCmd}}</code>
+  <button type="button" class="btn" style="margin-top:8px" onclick="copyText('cmd')">copy</button>
+</section>
+<script>
+function copyText(id){var el=document.getElementById(id);navigator.clipboard&&navigator.clipboard.writeText(el.textContent)}
+</script>
+{{end}}
