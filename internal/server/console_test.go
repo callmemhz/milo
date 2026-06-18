@@ -138,6 +138,77 @@ func TestConsoleRequiresSession(t *testing.T) {
 	}
 }
 
+// loginAs logs the client in and returns the CSRF token for subsequent POSTs.
+func loginAs(t *testing.T, c *http.Client, base, user, pass string) string {
+	t.Helper()
+	c.Get(base + "/console/login")
+	csrf := csrfFromJar(t, c.Jar, base)
+	if _, err := c.PostForm(base+"/console/login", url.Values{
+		"username": {user}, "password": {pass}, "_csrf": {csrf},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return csrf
+}
+
+func TestConsoleAdminPages(t *testing.T) {
+	h, s := newConsoleServer(t)
+	seedUserWithPassword(t, s, "boss", "supersecret", true)
+	c := newClient(t)
+	csrf := loginAs(t, c, h.URL, "boss", "supersecret")
+
+	// Users page lists the admin.
+	resp, _ := c.Get(h.URL + "/console/users")
+	if body := readBody(t, resp); !strings.Contains(body, "用户管理") || !strings.Contains(body, "boss") {
+		t.Fatalf("users page missing content:\n%s", body)
+	}
+
+	// Create a new user, then confirm it shows up.
+	if _, err := c.PostForm(h.URL+"/console/users/create", url.Values{
+		"username": {"carol"}, "password": {"carolpass1"}, "_csrf": {csrf},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	resp, _ = c.Get(h.URL + "/console/users")
+	if !strings.Contains(readBody(t, resp), "carol") {
+		t.Fatal("created user not listed")
+	}
+	// And the new user can log in (password was set).
+	c2 := newClient(t)
+	c2.Get(h.URL + "/console/login")
+	csrf2 := csrfFromJar(t, c2.Jar, h.URL)
+	resp, _ = c2.PostForm(h.URL+"/console/login", url.Values{
+		"username": {"carol"}, "password": {"carolpass1"}, "_csrf": {csrf2},
+	})
+	if !strings.Contains(readBody(t, resp), "我的实例") {
+		t.Fatal("created user could not log in")
+	}
+
+	// Admin overview renders.
+	resp, _ = c.Get(h.URL + "/console/admin")
+	if !strings.Contains(readBody(t, resp), "宿主机状态") {
+		t.Fatal("admin page missing")
+	}
+}
+
+func TestConsoleNonAdminForbidden(t *testing.T) {
+	h, s := newConsoleServer(t)
+	seedUserWithPassword(t, s, "alice", "supersecret", false)
+	c := newClient(t)
+	loginAs(t, c, h.URL, "alice", "supersecret")
+
+	for _, path := range []string{"/console/users", "/console/admin"} {
+		resp, err := c.Get(h.URL + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resp.StatusCode != http.StatusForbidden {
+			t.Fatalf("%s status = %d, want 403", path, resp.StatusCode)
+		}
+		resp.Body.Close()
+	}
+}
+
 func TestConsoleLogout(t *testing.T) {
 	h, s := newConsoleServer(t)
 	seedUserWithPassword(t, s, "bob", "supersecret", true)
