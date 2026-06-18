@@ -14,7 +14,7 @@
     <a class="brand" href="/console">milo</a>
     <nav>
       <a href="/console">概览</a>
-      {{if .Admin}}<a href="/console/admin/instances">全部实例</a><a href="/console/admin">宿主机</a><a href="/console/admin/images">镜像</a><a href="/console/users">用户</a>{{end}}
+      {{if .Admin}}<a href="/console/admin/instances">全部实例</a><a href="/console/admin">宿主机</a><a href="/console/admin/images">镜像</a><a href="/console/admin/volumes">存储卷</a><a href="/console/users">用户</a>{{end}}
       <span class="who">{{.User}}{{if .Admin}} · admin{{end}}</span>
       <form method="post" action="/console/logout" class="inline">
         <input type="hidden" name="_csrf" value="{{.CSRF}}">

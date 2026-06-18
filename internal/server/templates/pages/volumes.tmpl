@@ -1,0 +1,54 @@
+{{define "title"}}存储卷 · milo console{{end}}
+{{define "content"}}
+<h1>存储卷</h1>
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
+
+<form method="post" action="/console/admin/volumes/delete" id="vol-form" onsubmit="return confirmBatch()">
+  <input type="hidden" name="_csrf" value="{{.CSRF}}">
+  <div class="bulkbar">
+    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> 全选</label>
+    <label class="chk small"><input type="checkbox" name="force"> 强制删除（含使用中）</label>
+    <button type="submit" class="btn danger" id="bulk-del" disabled>删除所选 (<span id="cnt">0</span>)</button>
+  </div>
+  <section class="card pad0">
+    <table class="tbl">
+      <thead><tr><th class="ta-c">选</th><th>卷名</th><th>类型</th><th>归属实例</th><th>大小</th><th>引用</th><th>状态</th></tr></thead>
+      <tbody>
+      {{range .Volumes}}
+        <tr>
+          <td class="ta-c"><input type="checkbox" class="row-ck" name="names" value="{{.Name}}" onclick="updateCount()"></td>
+          <td class="mono">{{.Name}}</td>
+          <td>{{.Kind}}</td>
+          <td>
+            {{if .Instance}}
+              {{if eq .Kind "app"}}<a href="/console/apps/{{.Instance}}" class="mono">{{.Instance}}</a>
+              {{else}}<a href="/console/addons/{{.Instance}}" class="mono">{{.Instance}}</a>{{end}}
+            {{else}}<span class="muted">—</span>{{end}}
+          </td>
+          <td>{{.Size}}</td>
+          <td>{{if .InUse}}<span class="yes ico">使用中</span>{{else}}<span class="muted">空闲</span>{{end}}</td>
+          <td>{{if .Orphan}}<span class="no ico">⚠ 孤立</span>{{else}}<span class="muted">—</span>{{end}}</td>
+        </tr>
+      {{else}}
+        <tr><td colspan="7" class="muted">无存储卷</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+  </section>
+</form>
+<p class="muted">「孤立」= milo 卷的归属 app/addon 已不存在（删实例时未删卷），可安全回收。
+使用中的卷需先删对应实例，或勾「强制删除」。</p>
+
+<script>
+function rows(){return document.querySelectorAll('.row-ck')}
+function updateCount(){
+  var n=0; rows().forEach(function(c){if(c.checked)n++});
+  document.getElementById('cnt').textContent=n;
+  document.getElementById('bulk-del').disabled = n===0;
+  var all=document.getElementById('sel-all'); all.checked = n>0 && n===rows().length;
+}
+function toggleAll(src){rows().forEach(function(c){c.checked=src.checked}); updateCount()}
+function confirmBatch(){return confirm('删除选中的 '+document.getElementById('cnt').textContent+' 个卷? 数据不可恢复')}
+</script>
+{{end}}
