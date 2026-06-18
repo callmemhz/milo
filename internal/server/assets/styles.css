@@ -13,6 +13,8 @@ a:hover{text-decoration:underline}
   padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
 .brand{font-weight:700;font-size:16px;color:var(--fg)}
 .topbar nav{display:flex;align-items:center;gap:14px}
+.topbar nav a{color:var(--muted);font-size:13px}
+.topbar nav a:hover{color:var(--fg);text-decoration:none}
 .who{color:var(--muted)}
 main{max-width:960px;margin:0 auto;padding:24px 20px}
 h1{font-size:18px;margin:24px 0 12px}
@@ -20,12 +22,12 @@ h2{font-size:14px;margin:0 0 12px;color:var(--muted);text-transform:uppercase;le
 .muted{color:var(--muted)}
 .mono{font-family:var(--mono);font-size:12px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);padding:16px;margin-bottom:16px}
 .card.app:hover{border-color:var(--accent)}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .name{font-weight:600}
-.badge{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--panel2);color:var(--muted);text-transform:lowercase}
-.state-running{color:#062;background:rgba(52,211,153,.15);color:var(--ok)}
+.badge{font-size:11px;padding:2px 8px;background:var(--panel2);color:var(--muted);text-transform:lowercase}
+.state-running{color:var(--ok);background:rgba(52,211,153,.15)}
 .state-deploying,.state-provisioning,.state-pending{color:var(--warn);background:rgba(251,191,36,.12)}
 .state-failed,.state-down,.state-exited,.state-error{color:var(--bad);background:rgba(248,113,113,.12)}
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin:0}
@@ -37,31 +39,29 @@ h2{font-size:14px;margin:0 0 12px;color:var(--muted);text-transform:uppercase;le
 .crumb{margin:4px 0 0}
 .metrics{display:flex;gap:18px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .metric{color:var(--muted)} .metric b{color:var(--fg);font-variant-numeric:tabular-nums}
-.logs{background:#0a0c10;border:1px solid var(--line);border-radius:8px;padding:12px;
+.logs{background:#0a0c10;border:1px solid var(--line);padding:12px;
   font-family:var(--mono);font-size:12px;line-height:1.45;color:#cfd4dd;
   max-height:60vh;overflow:auto;white-space:pre-wrap;word-break:break-word;margin:0}
 .login-wrap{display:flex;min-height:80vh;align-items:center;justify-content:center}
 .login{width:320px}
 .login h1{margin:0 0 18px;text-align:center}
 .login label{display:block;margin-bottom:12px;color:var(--muted);font-size:12px}
-.login input{display:block;width:100%;margin-top:4px;padding:9px 10px;border-radius:8px;
+.login input{display:block;width:100%;margin-top:4px;padding:9px 10px;
   border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:14px}
 .login button,button.link{cursor:pointer}
-.login button{width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;
+.login button{width:100%;margin-top:6px;padding:10px;border:0;
   background:var(--accent);color:#06122b;font-weight:600;font-size:14px}
 .error{color:var(--bad);font-size:13px;margin:0 0 12px;text-align:center}
 button.link{background:none;border:0;color:var(--accent);font:inherit;padding:0}
 form.inline{display:inline;margin:0}
-.topbar nav a{color:var(--muted);font-size:13px}
-.topbar nav a:hover{color:var(--fg);text-decoration:none}
 /* tables */
 .tbl{width:100%;border-collapse:collapse;font-size:13px}
 .tbl th{text-align:left;color:var(--muted);font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line)}
 .tbl td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.row-actions input[type=password]{padding:5px 8px;border-radius:6px;border:1px solid var(--line);
+.row-actions input[type=password]{padding:5px 8px;border:1px solid var(--line);
   background:var(--panel2);color:var(--fg);width:120px;font-size:12px}
-.row-actions button,.form-row button{padding:5px 10px;border:0;border-radius:6px;
+.row-actions button,.form-row button{padding:5px 10px;
   background:var(--panel2);color:var(--fg);cursor:pointer;font-size:12px;border:1px solid var(--line)}
 .row-actions button:hover,.form-row button:hover{border-color:var(--accent)}
 button.danger{color:var(--bad)!important}
@@ -69,7 +69,7 @@ button.danger{color:var(--bad)!important}
 .ok-dot{color:var(--ok)}
 .form-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .form-row input[type=text],.form-row input[name=username],.form-row input[type=password]{
-  padding:8px 10px;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--fg)}
+  padding:8px 10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg)}
 .chk{color:var(--muted);display:flex;align-items:center;gap:6px}
-.flash{color:var(--ok);background:rgba(52,211,153,.1);padding:8px 12px;border-radius:8px;margin:0 0 14px}
+.flash{color:var(--ok);background:rgba(52,211,153,.1);padding:8px 12px;margin:0 0 14px}
 .error.left{text-align:left}
