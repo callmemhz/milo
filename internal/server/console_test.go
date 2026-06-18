@@ -191,13 +191,38 @@ func TestConsoleAdminPages(t *testing.T) {
 	}
 }
 
+func TestConsoleAllInstances(t *testing.T) {
+	h, s := newConsoleServer(t)
+	seedUserWithPassword(t, s, "boss", "supersecret", true)
+	// An app owned by someone else.
+	ctx := context.Background()
+	other, _ := s.CreateUser(ctx, "dana", false)
+	a, _ := s.CreateApp(ctx, "dana-app", 8080, "/", 30, 0.5, 256)
+	_ = s.AddOwner(ctx, a.ID, other.ID)
+
+	c := newClient(t)
+	loginAs(t, c, h.URL, "boss", "supersecret")
+
+	// Personal dashboard must NOT show another user's app.
+	resp, _ := c.Get(h.URL + "/console")
+	if strings.Contains(readBody(t, resp), "dana-app") {
+		t.Fatal("personal dashboard leaked another user's app")
+	}
+	// Admin all-instances view must show it, with owner.
+	resp, _ = c.Get(h.URL + "/console/admin/instances")
+	body := readBody(t, resp)
+	if !strings.Contains(body, "dana-app") || !strings.Contains(body, "dana") {
+		t.Fatalf("all-instances view missing app/owner:\n%s", body)
+	}
+}
+
 func TestConsoleNonAdminForbidden(t *testing.T) {
 	h, s := newConsoleServer(t)
 	seedUserWithPassword(t, s, "alice", "supersecret", false)
 	c := newClient(t)
 	loginAs(t, c, h.URL, "alice", "supersecret")
 
-	for _, path := range []string{"/console/users", "/console/admin"} {
+	for _, path := range []string{"/console/users", "/console/admin", "/console/admin/instances", "/console/admin/images"} {
 		resp, err := c.Get(h.URL + path)
 		if err != nil {
 			t.Fatal(err)

@@ -1,0 +1,32 @@
+{{define "title"}}本地镜像 · milo console{{end}}
+{{define "content"}}
+<h1>本地镜像</h1>
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
+<section class="card pad0">
+  <table class="tbl">
+    <thead><tr><th>标签</th><th>ID</th><th>大小</th><th>操作</th></tr></thead>
+    <tbody>
+    {{range .Images}}
+      <tr>
+        <td class="mono">{{.Tags}}</td>
+        <td class="mono muted">{{.Short}}</td>
+        <td>{{.Size}}</td>
+        <td>
+          <form method="post" action="/console/admin/images/delete" class="inline"
+                onsubmit="return confirm('删除镜像 {{.Tags}}?')">
+            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="id" value="{{.ID}}">
+            <label class="chk small"><input type="checkbox" name="force"> 强制</label>
+            <button type="submit" class="danger">删除</button>
+          </form>
+        </td>
+      </tr>
+    {{else}}
+      <tr><td colspan="4" class="muted">无本地镜像</td></tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+<p class="muted">删除会回收磁盘；被运行中容器占用的镜像需勾选「强制」。</p>
+{{end}}
