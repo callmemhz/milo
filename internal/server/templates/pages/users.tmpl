@@ -1,0 +1,49 @@
+{{define "title"}}用户 · milo console{{end}}
+{{define "content"}}
+<h1>用户管理</h1>
+{{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
+
+<section class="card">
+  <table class="tbl">
+    <thead><tr><th>用户名</th><th>角色</th><th>密码</th><th>创建</th><th>操作</th></tr></thead>
+    <tbody>
+    {{range .Users}}
+      <tr>
+        <td class="mono">{{.Username}}</td>
+        <td>{{if .IsAdmin}}<span class="badge admin">admin</span>{{else}}user{{end}}</td>
+        <td>{{if .HasPassword}}<span class="ok-dot">已设</span>{{else}}<span class="muted">未设</span>{{end}}</td>
+        <td class="muted">{{.Created}}</td>
+        <td class="row-actions">
+          <form method="post" action="/console/users/password" class="inline">
+            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="username" value="{{.Username}}">
+            <input type="password" name="password" placeholder="新密码" minlength="8" required>
+            <button type="submit">重置密码</button>
+          </form>
+          {{if ne .Username $.Self}}
+          <form method="post" action="/console/users/delete" class="inline"
+                onsubmit="return confirm('删除用户 {{.Username}}?')">
+            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="username" value="{{.Username}}">
+            <button type="submit" class="danger">删除</button>
+          </form>
+          {{end}}
+        </td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+</section>
+
+<h1>新建用户</h1>
+<section class="card">
+  <form method="post" action="/console/users/create" class="form-row">
+    <input type="hidden" name="_csrf" value="{{.CSRF}}">
+    <input name="username" placeholder="用户名" required>
+    <input type="password" name="password" placeholder="初始密码（≥8位）" minlength="8" required>
+    <label class="chk"><input type="checkbox" name="is_admin"> 管理员</label>
+    <button type="submit">创建</button>
+  </form>
+</section>
+{{end}}

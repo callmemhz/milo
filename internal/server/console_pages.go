@@ -34,7 +34,12 @@ func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
 	appCards := make([]appCard, 0, len(apps))
 	for _, a := range apps {
 		state, uptime, mem := s.inspectCard(ctx, s.currentContainer(ctx, a))
-		appCards = append(appCards, appCard{Name: a.Name, State: state, Uptime: uptime, Mem: mem})
+		c := appCard{Name: a.Name, State: state, Uptime: uptime, Mem: mem}
+		if id.User.IsAdmin {
+			owners, _ := s.Store.ListOwners(ctx, a.ID)
+			c.Owners = ownerNames(owners)
+		}
+		appCards = append(appCards, c)
 	}
 	addonCards := make([]addonCard, 0, len(addons))
 	for _, ad := range addons {
@@ -46,10 +51,15 @@ func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
 		if state == "down" && ad.Status != "" {
 			state = ad.Status
 		}
-		addonCards = append(addonCards, addonCard{
+		c := addonCard{
 			Name: ad.Name, Engine: ad.Engine, Status: state,
 			Uptime: uptime, Mem: mem, Exposed: ad.Exposed,
-		})
+		}
+		if id.User.IsAdmin {
+			owners, _ := s.Store.ListAddonOwners(ctx, ad.ID)
+			c.Owners = ownerNames(owners)
+		}
+		addonCards = append(addonCards, c)
 	}
 
 	s.render(w, "dashboard", map[string]any{

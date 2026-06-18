@@ -13,6 +13,8 @@
   <header class="topbar">
     <a class="brand" href="/console">milo</a>
     <nav>
+      <a href="/console">概览</a>
+      {{if .Admin}}<a href="/console/admin">宿主机</a><a href="/console/users">用户</a>{{end}}
       <span class="who">{{.User}}{{if .Admin}} · admin{{end}}</span>
       <form method="post" action="/console/logout" class="inline">
         <input type="hidden" name="_csrf" value="{{.CSRF}}">

@@ -1,0 +1,29 @@
+{{define "title"}}宿主机 · milo console{{end}}
+{{define "content"}}
+<h1>宿主机状态</h1>
+{{with .Host}}
+<section class="card">
+  <dl class="kv wide">
+    <div><dt>Docker 版本</dt><dd>{{.ServerVersion}}</dd></div>
+    <div><dt>系统</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
+    <div><dt>CPU 核数</dt><dd>{{.NCPU}}</dd></div>
+    <div><dt>内存总量</dt><dd>{{.MemTotal}}</dd></div>
+    <div><dt>容器</dt><dd>{{.ContainersRunning}} 运行 / {{.Containers}} 总</dd></div>
+    <div><dt>镜像</dt><dd>{{.Images}}</dd></div>
+  </dl>
+</section>
+{{else}}
+<p class="muted">无法读取 docker 宿主机信息。</p>
+{{end}}
+
+<h1>milo 资源</h1>
+<section class="card">
+  <dl class="kv wide">
+    <div><dt>App</dt><dd>{{.AppCount}}</dd></div>
+    <div><dt>Add-on</dt><dd>{{.AddonCount}}</dd></div>
+    <div><dt>用户</dt><dd>{{.UserCount}}</dd></div>
+    <div><dt>控制面版本</dt><dd>{{.Version}}</dd></div>
+  </dl>
+  <p class="muted" style="margin-top:12px">全部实例与 add-on（含归属）见 <a href="/console">概览</a>。</p>
+</section>
+{{end}}

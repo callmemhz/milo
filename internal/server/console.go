@@ -25,6 +25,7 @@ type ContainerRuntime interface {
 	InspectByName(ctx context.Context, name string) (*docker.ContainerInfo, error)
 	SampleStats(ctx context.Context, name string) (docker.Stats, error)
 	StatsStream(ctx context.Context, name string) (io.ReadCloser, error)
+	Info(ctx context.Context) (docker.HostInfo, error)
 }
 
 const (
@@ -79,6 +80,16 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/apps/{app}/stats/stream", s.consoleAppStatsStream)
 	})
 
+	// Admin-only pages.
+	r.Group(func(r chi.Router) {
+		r.Use(s.requireSession, s.requireAdminPage)
+		r.Get("/console/admin", s.consoleAdmin)
+		r.Get("/console/users", s.consoleUsers)
+		r.Post("/console/users/create", s.consoleUserCreate)
+		r.Post("/console/users/password", s.consoleUserSetPassword)
+		r.Post("/console/users/delete", s.consoleUserDelete)
+	})
+
 	// Root redirect for convenience.
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/console", http.StatusFound)
@@ -96,6 +107,19 @@ func (s *Server) requireSession(next http.Handler) http.Handler {
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(auth.WithIdentity(r.Context(), id)))
+	})
+}
+
+// requireAdminPage gates admin-only console pages. Runs after requireSession,
+// so an identity is present; non-admins get a 403.
+func (s *Server) requireAdminPage(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, _ := auth.IdentityFromContext(r.Context())
+		if id == nil || id.User == nil || !id.User.IsAdmin {
+			http.Error(w, "forbidden — admin only", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -166,6 +190,7 @@ type appCard struct {
 	Uptime string
 	Mem    string
 	CPU    string
+	Owners string // comma-joined; shown to admins
 }
 
 type addonCard struct {
@@ -175,6 +200,16 @@ type addonCard struct {
 	Uptime  string
 	Mem     string
 	Exposed bool
+	Owners  string // comma-joined; shown to admins
+}
+
+// ownerNames returns a comma-joined owner username list (best-effort).
+func ownerNames(users []store.User) string {
+	names := make([]string, 0, len(users))
+	for _, u := range users {
+		names = append(names, u.Username)
+	}
+	return strings.Join(names, ", ")
 }
 
 // currentContainer returns the running container name for an app, or "".
