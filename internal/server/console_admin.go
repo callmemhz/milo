@@ -130,28 +130,48 @@ func (s *Server) consoleImages(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// consoleImageDelete removes one or more selected images (multi-select batch).
 func (s *Server) consoleImageDelete(w http.ResponseWriter, r *http.Request) {
+	imagesFlash := func(key, msg string) {
+		http.Redirect(w, r, "/console/admin/images?"+key+"="+url.QueryEscape(msg), http.StatusFound)
+	}
 	if !s.checkCSRF(r) {
-		http.Redirect(w, r, "/console/admin/images?err="+url.QueryEscape("会话过期，请重试"), http.StatusFound)
+		imagesFlash("err", "会话过期，请重试")
 		return
 	}
-	idArg := r.FormValue("id")
+	if err := r.ParseForm(); err != nil {
+		imagesFlash("err", "表单解析失败")
+		return
+	}
+	ids := r.Form["ids"]
 	force := r.FormValue("force") == "on"
-	if s.Runtime == nil || idArg == "" {
-		http.Redirect(w, r, "/console/admin/images", http.StatusFound)
+	if s.Runtime == nil || len(ids) == 0 {
+		imagesFlash("err", "未选择任何镜像")
 		return
 	}
-	if err := s.Runtime.ImageRemove(r.Context(), idArg, force); err != nil {
-		http.Redirect(w, r, "/console/admin/images?err="+url.QueryEscape("删除失败（可能被容器占用，可勾选强制）"), http.StatusFound)
-		return
+	ok, failed := 0, 0
+	for _, id := range ids {
+		if id == "" {
+			continue
+		}
+		if err := s.Runtime.ImageRemove(r.Context(), id, force); err != nil {
+			failed++
+		} else {
+			ok++
+		}
 	}
-	http.Redirect(w, r, "/console/admin/images?msg="+url.QueryEscape("已删除镜像"), http.StatusFound)
+	msg := fmt.Sprintf("已删除 %d 个镜像", ok)
+	if failed > 0 {
+		msg += fmt.Sprintf("，%d 个失败（可能被容器占用，可勾选强制）", failed)
+	}
+	imagesFlash("msg", msg)
 }
 
 type userRow struct {
 	Username    string
 	IsAdmin     bool
 	HasPassword bool
+	Frozen      bool
 	Created     string
 }
 
@@ -163,10 +183,12 @@ func (s *Server) consoleUsers(w http.ResponseWriter, r *http.Request) {
 	rows := make([]userRow, 0, len(users))
 	for _, u := range users {
 		hash, _ := s.Store.GetUserPasswordHash(ctx, u.ID)
+		frozen, _ := s.Store.IsUserFrozen(ctx, u.ID)
 		rows = append(rows, userRow{
 			Username:    u.Username,
 			IsAdmin:     u.IsAdmin,
 			HasPassword: hash != "",
+			Frozen:      frozen,
 			Created:     u.CreatedAt.Format("2006-01-02"),
 		})
 	}
@@ -235,6 +257,36 @@ func (s *Server) consoleUserSetPassword(w http.ResponseWriter, r *http.Request) 
 	}
 	_ = s.Store.SetUserPassword(r.Context(), u.ID, hash)
 	usersFlash(w, r, "msg", "已重置 "+username+" 的密码")
+}
+
+func (s *Server) consoleUserFreeze(w http.ResponseWriter, r *http.Request) {
+	if !s.checkCSRF(r) {
+		usersFlash(w, r, "err", "会话过期，请重试")
+		return
+	}
+	id, _ := auth.IdentityFromContext(r.Context())
+	username := r.FormValue("username")
+	want := r.FormValue("frozen") == "true"
+	if username == id.User.Username {
+		usersFlash(w, r, "err", "不能冻结自己")
+		return
+	}
+	u, err := s.Store.GetUserByUsername(r.Context(), username)
+	if err != nil {
+		usersFlash(w, r, "err", "用户不存在")
+		return
+	}
+	if err := s.Store.SetUserFrozen(r.Context(), u.ID, want); err != nil {
+		usersFlash(w, r, "err", "操作失败")
+		return
+	}
+	if want {
+		// Kick the user out immediately by dropping all browser sessions.
+		_ = s.Store.DeleteUserSessions(r.Context(), u.ID)
+		usersFlash(w, r, "msg", "已冻结 "+username+"（账号保留，无法登录/调用）")
+		return
+	}
+	usersFlash(w, r, "msg", "已解冻 "+username)
 }
 
 func (s *Server) consoleUserDelete(w http.ResponseWriter, r *http.Request) {

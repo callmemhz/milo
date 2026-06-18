@@ -63,6 +63,11 @@ func (s *Server) consoleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 		fail()
 		return
 	}
+	if frozen, _ := s.Store.IsUserFrozen(r.Context(), u.ID); frozen {
+		w.WriteHeader(http.StatusForbidden)
+		s.render(w, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": "账号已被冻结，请联系管理员"})
+		return
+	}
 
 	token, err := auth.Generate()
 	if err != nil {

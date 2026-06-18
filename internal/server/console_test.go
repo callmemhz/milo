@@ -234,6 +234,43 @@ func TestConsoleNonAdminForbidden(t *testing.T) {
 	}
 }
 
+func TestConsoleFrozenUserBlocked(t *testing.T) {
+	h, s := newConsoleServer(t)
+	seedUserWithPassword(t, s, "eve", "supersecret", false)
+	ctx := context.Background()
+	u, _ := s.GetUserByUsername(ctx, "eve")
+	if err := s.SetUserFrozen(ctx, u.ID, true); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newClient(t)
+	c.Get(h.URL + "/console/login")
+	csrf := csrfFromJar(t, c.Jar, h.URL)
+	resp, err := c.PostForm(h.URL+"/console/login", url.Values{
+		"username": {"eve"}, "password": {"supersecret"}, "_csrf": {csrf},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("frozen login status = %d, want 403", resp.StatusCode)
+	}
+	if !strings.Contains(readBody(t, resp), "冻结") {
+		t.Fatal("expected frozen message")
+	}
+
+	// Unfreeze -> can log in again.
+	if err := s.SetUserFrozen(ctx, u.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	c2 := newClient(t)
+	loginAs(t, c2, h.URL, "eve", "supersecret")
+	resp, _ = c2.Get(h.URL + "/console")
+	if !strings.Contains(readBody(t, resp), "我的实例") {
+		t.Fatal("unfrozen user should log in")
+	}
+}
+
 func TestConsoleLogout(t *testing.T) {
 	h, s := newConsoleServer(t)
 	seedUserWithPassword(t, s, "bob", "supersecret", true)

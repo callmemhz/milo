@@ -4,13 +4,13 @@
 {{with .Host}}
 <section class="card">
   <h2>主机</h2>
-  <dl class="kv wide">
-    <div><dt>Docker 版本</dt><dd>{{.ServerVersion}}</dd></div>
-    <div><dt>系统</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
-    <div><dt>CPU 核数</dt><dd>{{.NCPU}}</dd></div>
-    <div><dt>内存总量</dt><dd>{{.MemTotal}}</dd></div>
-    <div><dt>容器</dt><dd>{{.ContainersRunning}} 运行 / {{.Containers}} 总</dd></div>
-    <div><dt>镜像</dt><dd>{{.Images}}</dd></div>
+  <dl class="specs">
+    <div class="cell"><dt>Docker 版本</dt><dd>{{.ServerVersion}}</dd></div>
+    <div class="cell"><dt>系统</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
+    <div class="cell"><dt>CPU 核数</dt><dd>{{.NCPU}}</dd></div>
+    <div class="cell"><dt>内存总量</dt><dd>{{.MemTotal}}</dd></div>
+    <div class="cell"><dt>容器</dt><dd>{{.ContainersRunning}} 运行 / {{.Containers}} 总</dd></div>
+    <div class="cell"><dt>镜像</dt><dd>{{.Images}}</dd></div>
   </dl>
 </section>
 {{else}}
@@ -29,12 +29,12 @@
 {{with .Disk}}
 <section class="card">
   <h2>磁盘（docker 占用）</h2>
-  <dl class="kv wide">
-    <div><dt>镜像</dt><dd>{{.Images}}</dd></div>
-    <div><dt>容器</dt><dd>{{.Containers}}</dd></div>
-    <div><dt>卷</dt><dd>{{.Volumes}}</dd></div>
-    <div><dt>构建缓存</dt><dd>{{.BuildCache}}</dd></div>
-    <div><dt>合计</dt><dd>{{.Total}}</dd></div>
+  <dl class="specs">
+    <div class="cell"><dt>镜像</dt><dd>{{.Images}}</dd></div>
+    <div class="cell"><dt>容器</dt><dd>{{.Containers}}</dd></div>
+    <div class="cell"><dt>卷</dt><dd>{{.Volumes}}</dd></div>
+    <div class="cell"><dt>构建缓存</dt><dd>{{.BuildCache}}</dd></div>
+    <div class="cell"><dt>合计</dt><dd>{{.Total}}</dd></div>
   </dl>
   {{with $.DiskFree}}
   <div style="margin-top:12px">{{meter "磁盘" .DiskPct .DiskNum}}</div>
@@ -45,11 +45,11 @@
 
 <h1>milo 资源</h1>
 <section class="card">
-  <dl class="kv wide">
-    <div><dt>App</dt><dd>{{.AppCount}}</dd></div>
-    <div><dt>Add-on</dt><dd>{{.AddonCount}}</dd></div>
-    <div><dt>用户</dt><dd>{{.UserCount}}</dd></div>
-    <div><dt>控制面版本</dt><dd>{{.Version}}</dd></div>
+  <dl class="specs">
+    <div class="cell"><dt>App</dt><dd>{{.AppCount}}</dd></div>
+    <div class="cell"><dt>Add-on</dt><dd>{{.AddonCount}}</dd></div>
+    <div class="cell"><dt>用户</dt><dd>{{.UserCount}}</dd></div>
+    <div class="cell"><dt>控制面版本</dt><dd>{{.Version}}</dd></div>
   </dl>
   <p class="muted" style="margin-top:12px"><a href="/console/admin/instances">→ 查看全部实例</a></p>
 </section>

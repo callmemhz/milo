@@ -112,3 +112,6 @@ button.danger{color:var(--bad)!important}
 .dot.running{background:var(--ok)} .dot.deploying,.dot.provisioning,.dot.pending{background:var(--warn)}
 .dot.failed,.dot.down,.dot.exited,.dot.error{background:var(--bad)}
 .yes{color:var(--ok)} .no{color:var(--muted)}
+.ta-c{text-align:center}
+.bulkbar{display:flex;align-items:center;gap:16px;margin-bottom:12px}
+.bulkbar .btn[disabled]{opacity:.45;cursor:not-allowed}
