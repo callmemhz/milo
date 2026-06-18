@@ -72,6 +72,13 @@ func (o *Orchestrator) ProvisionAddon(ctx context.Context, addonID int64) error 
 		VolumeTarget: eng.DataTarget,
 		Network:      netName,
 		Labels:       map[string]string{"milo.addon": addon.Name},
+		// When exposed, publish the engine port on the host so the addon is
+		// reachable from outside via <addon>.<root>:<host_port>. The host port
+		// is pinned to addon.HostPort once assigned, so it stays stable across
+		// restarts and re-exposes.
+		PublishPort:     addon.Exposed,
+		Port:            eng.Port,
+		PublishHostPort: int(addon.HostPort),
 	}); err != nil {
 		return o.failAddon(ctx, addon.ID, containerName, "docker_error", err)
 	}
@@ -80,6 +87,14 @@ func (o *Orchestrator) ProvisionAddon(ctx context.Context, addonID int64) error 
 		_ = o.Docker.Stop(ctx, containerName, 5)
 		_ = o.Docker.Remove(ctx, containerName)
 		return o.failAddon(ctx, addon.ID, containerName, "readiness_failed", err)
+	}
+
+	// On first expose, Docker assigned an ephemeral host port; read it back and
+	// persist it so subsequent provisions reuse the same port.
+	if addon.Exposed && addon.HostPort == 0 {
+		if info, err := o.Docker.InspectByName(ctx, containerName); err == nil && info.HostPort > 0 {
+			_ = o.Store.SetAddonHostPort(ctx, addon.ID, int64(info.HostPort))
+		}
 	}
 
 	return o.Store.UpdateAddonStatus(ctx, addon.ID, store.AddonRunning, containerName)

@@ -89,6 +89,59 @@ func setupLinkFixture(t *testing.T, fd *fakeDeployer) (srvURL string, s *store.S
 	return srv.URL, st, tok
 }
 
+func TestExposeUnexposeAddonHTTP(t *testing.T) {
+	fd := newFakeDeployer()
+	url, s, tok := setupLinkFixture(t, fd)
+
+	// expose: flips the flag, re-provisions, assigns a host port, and returns
+	// an external URL pointing at <addon>.<root>:<host_port>.
+	resp, body := doJSON(t, "POST", url+"/v1/addons/mydb/expose", tok, nil)
+	if resp.StatusCode != 200 {
+		t.Fatalf("expose: %d %s", resp.StatusCode, body)
+	}
+	var out api.AddonResp
+	_ = json.Unmarshal(body, &out)
+	if !out.Exposed || out.HostPort != 54321 {
+		t.Fatalf("expected exposed with host port 54321, got %+v", out)
+	}
+	if out.ExternalURL != "postgres://app:"+mustAddonPassword(t, s, "mydb")+"@mydb.app.example.com:54321/app?sslmode=disable" {
+		t.Fatalf("external url: %q", out.ExternalURL)
+	}
+
+	// idempotent: exposing again is a no-op (does not re-provision).
+	fd.provisionCalled = false
+	if resp, _ := doJSON(t, "POST", url+"/v1/addons/mydb/expose", tok, nil); resp.StatusCode != 200 {
+		t.Fatalf("re-expose: %d", resp.StatusCode)
+	}
+	if fd.provisionCalled {
+		t.Fatal("re-expose should not re-provision when already exposed")
+	}
+
+	// unexpose: clears the flag and drops the external URL, but keeps host_port
+	// in the DB so re-exposing reuses the same port.
+	resp, body = doJSON(t, "DELETE", url+"/v1/addons/mydb/expose", tok, nil)
+	if resp.StatusCode != 200 {
+		t.Fatalf("unexpose: %d %s", resp.StatusCode, body)
+	}
+	var unexposed api.AddonResp
+	_ = json.Unmarshal(body, &unexposed)
+	if unexposed.Exposed || unexposed.ExternalURL != "" {
+		t.Fatalf("expected not exposed and no external url, got %+v", unexposed)
+	}
+	if got, _ := s.GetAddonByName(context.Background(), "mydb"); got.HostPort != 54321 {
+		t.Fatalf("expected host port retained, got %d", got.HostPort)
+	}
+}
+
+func mustAddonPassword(t *testing.T, s *store.Store, name string) string {
+	t.Helper()
+	a, err := s.GetAddonByName(context.Background(), name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return a.Password
+}
+
 func TestLinkLifecycleHTTP(t *testing.T) {
 	fd := newFakeDeployer()
 	url, s, tok := setupLinkFixture(t, fd)

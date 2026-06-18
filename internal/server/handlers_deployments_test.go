@@ -70,6 +70,10 @@ func (f *fakeDeployer) ProvisionAddon(ctx context.Context, addonID int64) error 
 		if err != nil {
 			return err
 		}
+		// Mirror the real orchestrator: first expose assigns a host port.
+		if addon.Exposed && addon.HostPort == 0 {
+			_ = f.provisionStore.SetAddonHostPort(ctx, addonID, 54321)
+		}
 		_ = f.provisionStore.UpdateAddonStatus(ctx, addonID, store.AddonRunning, "addon-"+addon.Name)
 	}
 	return f.provisionErr

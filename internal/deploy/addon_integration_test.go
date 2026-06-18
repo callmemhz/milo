@@ -78,6 +78,66 @@ func TestProvisionAndDeleteRedisAddon(t *testing.T) {
 	}
 }
 
+func TestExposeAddonPublishesStableHostPort(t *testing.T) {
+	ts := newTestSetup(t, "adapp3")
+	ctx := context.Background()
+
+	name := fmt.Sprintf("itx%d", time.Now().UnixNano()%1e9)
+	t.Cleanup(func() { cleanupAddon(t, ts, name) })
+
+	pass, _ := GeneratePassword()
+	addon, err := ts.Store.CreateAddon(ctx, name, "redis", "7", 0.5, 256, pass)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Exposing: flip the flag, provision, and the host port is assigned + persisted.
+	if err := ts.Store.SetAddonExposed(ctx, addon.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := ts.Orch.ProvisionAddon(ctx, addon.ID); err != nil {
+		t.Fatalf("provision (exposed) failed: %v", err)
+	}
+	got, _ := ts.Store.GetAddonByID(ctx, addon.ID)
+	if got.HostPort == 0 {
+		t.Fatal("expected a host port to be assigned on expose")
+	}
+	info, err := ts.Docker.InspectByName(ctx, AddonContainerName(name))
+	if err != nil || info.HostPort != int(got.HostPort) {
+		t.Fatalf("published host port mismatch: db=%d docker=%+v err=%v", got.HostPort, info, err)
+	}
+
+	// Restart keeps the same host port (stable connection string).
+	first := got.HostPort
+	if err := ts.Orch.ProvisionAddon(ctx, addon.ID); err != nil {
+		t.Fatalf("re-provision failed: %v", err)
+	}
+	got, _ = ts.Store.GetAddonByID(ctx, addon.ID)
+	if got.HostPort != first {
+		t.Fatalf("host port changed across restart: %d -> %d", first, got.HostPort)
+	}
+	info, _ = ts.Docker.InspectByName(ctx, AddonContainerName(name))
+	if info.HostPort != int(first) {
+		t.Fatalf("docker host port changed across restart: want %d got %d", first, info.HostPort)
+	}
+
+	// Unexpose: provision without the published port; host_port is retained.
+	if err := ts.Store.SetAddonExposed(ctx, addon.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := ts.Orch.ProvisionAddon(ctx, addon.ID); err != nil {
+		t.Fatalf("provision (unexposed) failed: %v", err)
+	}
+	info, _ = ts.Docker.InspectByName(ctx, AddonContainerName(name))
+	if info.HostPort != 0 {
+		t.Fatalf("expected no published port after unexpose, got %d", info.HostPort)
+	}
+	got, _ = ts.Store.GetAddonByID(ctx, addon.ID)
+	if got.HostPort != first {
+		t.Fatalf("host port should be retained after unexpose: want %d got %d", first, got.HostPort)
+	}
+}
+
 func TestProvisionPostgresAddon(t *testing.T) {
 	ts := newTestSetup(t, "adapp2")
 	ctx := context.Background()
