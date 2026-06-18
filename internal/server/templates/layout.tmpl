@@ -16,6 +16,7 @@
     <nav>
       <a href="/console">{{call .T "nav.overview"}}</a>
       {{if .Admin}}<a href="/console/admin/instances">{{call .T "nav.all_instances"}}</a><a href="/console/admin">{{call .T "nav.host"}}</a><a href="/console/admin/images">{{call .T "nav.images"}}</a><a href="/console/admin/volumes">{{call .T "nav.volumes"}}</a><a href="/console/users">{{call .T "nav.users"}}</a>{{end}}
+      <a href="/console/account">{{call .T "nav.account"}}</a>
       <span class="langsel"><a href="/console/lang?lang=en" class="{{if eq $lang "en"}}active{{end}}">EN</a><a href="/console/lang?lang=zh" class="{{if eq $lang "zh"}}active{{end}}">中文</a></span>
       <span class="who">{{.User}}{{if .Admin}} · admin{{end}}</span>
       <form method="post" action="/console/logout" class="inline">

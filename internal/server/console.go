@@ -91,6 +91,10 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/addons/{addon}/logs/stream", s.consoleAddonLogsStream)
 		r.Get("/console/addons/{addon}/stats/stream", s.consoleAddonStatsStream)
 		r.Post("/console/addons/{addon}/expose", s.consoleAddonExpose)
+		// Self-service account / CLI tokens (any signed-in user).
+		r.Get("/console/account", s.consoleAccount)
+		r.Post("/console/account/tokens", s.consoleAccountTokenCreate)
+		r.Post("/console/account/tokens/revoke", s.consoleAccountTokenRevoke)
 	})
 
 	// Admin-only pages.
@@ -107,6 +111,7 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Post("/console/users/password", s.consoleUserSetPassword)
 		r.Post("/console/users/freeze", s.consoleUserFreeze)
 		r.Post("/console/users/delete", s.consoleUserDelete)
+		r.Post("/console/users/token", s.consoleUserToken)
 	})
 
 	// Root redirect for convenience.
