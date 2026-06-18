@@ -77,9 +77,17 @@ type AddonResp struct {
 	MemoryLimitMB int64    `json:"memory_limit_mb"`
 	Owners        []string `json:"owners"`
 	LinkedApps    []string `json:"linked_apps"`
-	// URL is the connection string (including the password). Only present on
-	// single-addon GET responses, never in lists.
+	// Exposed reports whether the addon publishes a host port for external
+	// access. HostPort is the published host port (0 when not exposed).
+	Exposed  bool `json:"exposed"`
+	HostPort int  `json:"host_port,omitempty"`
+	// URL is the in-cluster connection string (including the password), using
+	// the addon's Docker DNS name. Only present on single-addon GET responses.
 	URL string `json:"url,omitempty"`
+	// ExternalURL is the connection string for reaching an exposed addon from
+	// outside the host, via <addon>.<root_domain>:<host_port>. Only present on
+	// single-addon GET responses, and only when the addon is exposed.
+	ExternalURL string `json:"external_url,omitempty"`
 }
 
 type CreateLinkReq struct {

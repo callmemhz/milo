@@ -62,6 +62,14 @@ func (s *Store) UpdateAddonStatus(ctx context.Context, id int64, status, contain
 	})
 }
 
+func (s *Store) SetAddonExposed(ctx context.Context, id int64, exposed bool) error {
+	return s.Q.SetAddonExposed(ctx, sqlcgen.SetAddonExposedParams{Exposed: exposed, ID: id})
+}
+
+func (s *Store) SetAddonHostPort(ctx context.Context, id int64, hostPort int64) error {
+	return s.Q.SetAddonHostPort(ctx, sqlcgen.SetAddonHostPortParams{HostPort: hostPort, ID: id})
+}
+
 func (s *Store) SoftDeleteAddon(ctx context.Context, id int64) error {
 	now := time.Now().UTC()
 	return s.Q.SoftDeleteAddon(ctx, sqlcgen.SoftDeleteAddonParams{

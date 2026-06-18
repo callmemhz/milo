@@ -24,6 +24,12 @@ SELECT * FROM addons WHERE status = 'provisioning' AND deleted_at IS NULL;
 -- name: UpdateAddonStatus :exec
 UPDATE addons SET status = ?, container_name = ? WHERE id = ?;
 
+-- name: SetAddonExposed :exec
+UPDATE addons SET exposed = ? WHERE id = ?;
+
+-- name: SetAddonHostPort :exec
+UPDATE addons SET host_port = ? WHERE id = ?;
+
 -- name: SoftDeleteAddon :exec
 UPDATE addons SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL;
 

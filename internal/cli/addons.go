@@ -90,15 +90,20 @@ func addonsCmd(getClient clientFactory) *cobra.Command {
 			}
 			rows := make([][]string, 0, len(addons))
 			for _, s := range addons {
+				exposed := "no"
+				if s.Exposed {
+					exposed = "yes"
+				}
 				rows = append(rows, []string{
 					s.Name,
 					s.Engine + ":" + s.Version,
 					s.Status,
+					exposed,
 					strings.Join(s.LinkedApps, ","),
 					strings.Join(s.Owners, ","),
 				})
 			}
-			out.PrintTable([]string{"NAME", "ENGINE", "STATUS", "LINKED APPS", "OWNERS"}, rows)
+			out.PrintTable([]string{"NAME", "ENGINE", "STATUS", "EXPOSED", "LINKED APPS", "OWNERS"}, rows)
 			return nil
 		},
 	}
@@ -171,6 +176,49 @@ func addonsCmd(getClient clientFactory) *cobra.Command {
 		},
 	}
 	cmd.AddCommand(restart)
+
+	// expose
+	expose := &cobra.Command{
+		Use:   "expose [name]",
+		Short: "Enable external access (publishes a host port; recreates the container)",
+		Long: "Enable external access to the add-on. The add-on becomes reachable at\n" +
+			"<name>.<root-domain>:<host-port>; see the external_url in the output.\n" +
+			"The data volume is kept; the container is recreated (brief downtime).",
+		Args: cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			cli, out, err := getClient()
+			if err != nil {
+				return err
+			}
+			var s api.AddonResp
+			if err := cli.Post("/v1/addons/"+args[0]+"/expose", nil, &s); err != nil {
+				return err
+			}
+			out.Print(s)
+			return nil
+		},
+	}
+	cmd.AddCommand(expose)
+
+	// unexpose
+	unexpose := &cobra.Command{
+		Use:   "unexpose [name]",
+		Short: "Disable external access (drops the published port; recreates the container)",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			cli, out, err := getClient()
+			if err != nil {
+				return err
+			}
+			var s api.AddonResp
+			if err := cli.DeleteInto("/v1/addons/"+args[0]+"/expose", &s); err != nil {
+				return err
+			}
+			out.Print(s)
+			return nil
+		},
+	}
+	cmd.AddCommand(unexpose)
 
 	// logs
 	logs := &cobra.Command{

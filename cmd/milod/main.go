@@ -72,6 +72,7 @@ func main() {
 	srv := server.New(s, cfg.Version)
 	srv.Deployer = orch
 	srv.Docker = d
+	srv.RootDomain = cfg.RootDomain
 
 	httpSrv := &http.Server{
 		Addr:              cfg.HTTPAddr,

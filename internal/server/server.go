@@ -37,6 +37,9 @@ type Server struct {
 	Deployer Deployer    // set by main; nil in unit tests
 	Docker   LogStreamer // set by main; nil in unit tests
 	Version  string
+	// RootDomain is the public DNS root for apps and exposed addons
+	// (e.g. app.example.com). Used to build exposed-addon external URLs.
+	RootDomain string
 }
 
 func New(s *store.Store, version string) *Server {

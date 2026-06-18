@@ -44,6 +44,24 @@ func TestConnectionURL(t *testing.T) {
 	}
 }
 
+func TestExternalConnectionURL(t *testing.T) {
+	pg := ExternalConnectionURL("postgres", "mydb", "s3cret", "app.example.com", 54321)
+	if pg != "postgres://app:s3cret@mydb.app.example.com:54321/app?sslmode=disable" {
+		t.Fatalf("got %q", pg)
+	}
+	rd := ExternalConnectionURL("redis", "cache", "s3cret", "app.example.com", 54322)
+	if rd != "redis://:s3cret@cache.app.example.com:54322/0" {
+		t.Fatalf("got %q", rd)
+	}
+	// Not exposed (hostPort 0) or no root domain → empty.
+	if got := ExternalConnectionURL("postgres", "mydb", "s3cret", "app.example.com", 0); got != "" {
+		t.Fatalf("expected empty for hostPort 0, got %q", got)
+	}
+	if got := ExternalConnectionURL("postgres", "mydb", "s3cret", "", 54321); got != "" {
+		t.Fatalf("expected empty for empty root domain, got %q", got)
+	}
+}
+
 func TestGeneratePassword(t *testing.T) {
 	a, err := GeneratePassword()
 	if err != nil || len(a) != 32 {

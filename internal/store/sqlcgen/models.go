@@ -20,6 +20,8 @@ type Addon struct {
 	ContainerName *string    `json:"container_name"`
 	CreatedAt     time.Time  `json:"created_at"`
 	DeletedAt     *time.Time `json:"deleted_at"`
+	Exposed       bool       `json:"exposed"`
+	HostPort      int64      `json:"host_port"`
 }
 
 type AddonOwner struct {

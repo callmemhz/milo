@@ -25,6 +25,7 @@ func newTestServerWithDeployer(t *testing.T, dep Deployer) (*httptest.Server, *s
 	t.Cleanup(func() { s.Close() })
 	srv := New(s, "test")
 	srv.Deployer = dep
+	srv.RootDomain = "app.example.com"
 	h := httptest.NewServer(srv.Router())
 	t.Cleanup(h.Close)
 	return h, s

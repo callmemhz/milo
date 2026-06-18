@@ -74,6 +74,9 @@ func (c *Client) Patch(path string, body, out any) error { return c.do("PATCH", 
 // Delete performs a DELETE request (no response body expected).
 func (c *Client) Delete(path string) error { return c.do("DELETE", path, nil, nil) }
 
+// DeleteInto performs a DELETE request and decodes the JSON response into out.
+func (c *Client) DeleteInto(path string, out any) error { return c.do("DELETE", path, nil, out) }
+
 // Stream issues a GET and returns the response body for streaming (e.g. logs).
 // The caller must Close the returned ReadCloser.
 func (c *Client) Stream(path string) (io.ReadCloser, error) {

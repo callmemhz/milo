@@ -99,6 +99,25 @@ func ConnectionURL(engineName, addonName, password string) string {
 	return ""
 }
 
+// ExternalConnectionURL builds the connection URL for reaching an exposed
+// addon from outside the host. The host is <addon>.<rootDomain> (covered by
+// the same wildcard DNS record as apps) and hostPort is the published host
+// port. Unlike ConnectionURL, the port is the host port, not the engine's
+// in-container port. Returns "" if the addon is not exposed (hostPort == 0).
+func ExternalConnectionURL(engineName, addonName, password, rootDomain string, hostPort int64) string {
+	if hostPort == 0 || rootDomain == "" {
+		return ""
+	}
+	host := fmt.Sprintf("%s.%s", addonName, rootDomain)
+	switch engineName {
+	case "postgres":
+		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=disable", addonUser, password, host, hostPort, addonDB)
+	case "redis":
+		return fmt.Sprintf("redis://:%s@%s:%d/0", password, host, hostPort)
+	}
+	return ""
+}
+
 // LinkEnvKey computes the env var name a link injects: <ALIAS>_URL when an
 // alias is set, otherwise the engine default (DATABASE_URL / REDIS_URL).
 func LinkEnvKey(engineName, alias string) string {

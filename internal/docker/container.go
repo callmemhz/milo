@@ -24,6 +24,9 @@ type RunSpec struct {
 	MemoryMB    int64
 	VolumeSrc   string
 	PublishPort bool
+	// PublishHostPort pins the host port that Port is published on. 0 means
+	// let Docker pick an ephemeral port. Only consulted when PublishPort is set.
+	PublishHostPort int
 
 	// Network overrides the primary network the container joins
 	// (default: the client's milo network).
@@ -98,11 +101,15 @@ func (c *Client) Run(ctx context.Context, spec RunSpec) (string, error) {
 
 	// Port publishing.
 	if spec.PublishPort && spec.Port > 0 {
+		hostPort := "0"
+		if spec.PublishHostPort > 0 {
+			hostPort = strconv.Itoa(spec.PublishHostPort)
+		}
 		portKey := nat.Port(fmt.Sprintf("%d/tcp", spec.Port))
 		cfg.ExposedPorts = nat.PortSet{portKey: struct{}{}}
 		hc.PortBindings = nat.PortMap{
 			portKey: []nat.PortBinding{
-				{HostIP: "0.0.0.0", HostPort: "0"},
+				{HostIP: "0.0.0.0", HostPort: hostPort},
 			},
 		}
 	}

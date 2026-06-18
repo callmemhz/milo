@@ -103,6 +103,34 @@ access boundary. Add-ons are stateful and restart in place (brief downtime),
 keeping their data volume. Deleting an add-on with active links requires
 `--force`, which unlinks and redeploys the affected apps.
 
+### External access (off by default)
+
+By default an add-on is only reachable by linked apps on its private network.
+To reach it from outside the host — your laptop, CI, or another cluster — turn
+on external access explicitly:
+
+```bash
+milo addons expose mydb     # publish a host port; print the external URL
+milo addons get mydb        # shows external_url + host_port
+milo addons unexpose mydb   # stop publishing
+```
+
+Exposing gives the add-on its own subdomain, just like an app: it becomes
+reachable at `<addon>.<root>:<host_port>`. The subdomain resolves via the same
+wildcard DNS record as apps (`*.<root>`), so no DNS change is needed; the
+add-on publishes its TCP port directly on the host (Caddy is not involved).
+The host port is assigned once and stays stable across restarts and
+re-exposes, so the connection string doesn't change:
+
+- postgres → `postgres://app:<password>@mydb.app.example.com:<host_port>/app?sslmode=disable`
+- redis → `redis://:<password>@cache.app.example.com:<host_port>/0`
+
+Exposing/unexposing recreates the container in place (brief downtime), keeping
+the data volume. **Security note:** an exposed add-on is reachable by anyone
+who can reach the host on that port, guarded only by the generated password,
+and traffic is plaintext (no TLS) — keep it off unless you need it, and prefer
+host firewall rules to scope who can connect.
+
 ## Deploy contract
 
 A typical CI step (GitHub Actions example):
@@ -156,6 +184,8 @@ This is a v1. Things that are **in**:
 - Auto subdomain (`{app}.app.example.com`) with wildcard cert (DNS-01)
 - Add-ons (`postgres`, `redis`) with per-add-on network isolation and app
   `link`
+- Opt-in external access for add-ons (`addons expose`) on a stable per-add-on
+  host port, reachable at `<addon>.<root>:<host_port>`
 
 Things deliberately **out** of v1 (roadmap):
 

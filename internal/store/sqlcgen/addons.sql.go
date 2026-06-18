@@ -27,7 +27,7 @@ func (q *Queries) AddAddonOwner(ctx context.Context, arg AddAddonOwnerParams) er
 const createAddon = `-- name: CreateAddon :one
 INSERT INTO addons (name, engine, version, cpu_limit, memory_limit_mb, password, status, created_at)
 VALUES (?, ?, ?, ?, ?, ?, 'provisioning', ?)
-RETURNING id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at
+RETURNING id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at, exposed, host_port
 `
 
 type CreateAddonParams struct {
@@ -63,12 +63,14 @@ func (q *Queries) CreateAddon(ctx context.Context, arg CreateAddonParams) (Addon
 		&i.ContainerName,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Exposed,
+		&i.HostPort,
 	)
 	return i, err
 }
 
 const getAddonByID = `-- name: GetAddonByID :one
-SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at FROM addons WHERE id = ? AND deleted_at IS NULL
+SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at, exposed, host_port FROM addons WHERE id = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetAddonByID(ctx context.Context, id int64) (Addon, error) {
@@ -86,12 +88,14 @@ func (q *Queries) GetAddonByID(ctx context.Context, id int64) (Addon, error) {
 		&i.ContainerName,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Exposed,
+		&i.HostPort,
 	)
 	return i, err
 }
 
 const getAddonByName = `-- name: GetAddonByName :one
-SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at FROM addons WHERE name = ? AND deleted_at IS NULL
+SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at, exposed, host_port FROM addons WHERE name = ? AND deleted_at IS NULL
 `
 
 func (q *Queries) GetAddonByName(ctx context.Context, name string) (Addon, error) {
@@ -109,6 +113,8 @@ func (q *Queries) GetAddonByName(ctx context.Context, name string) (Addon, error
 		&i.ContainerName,
 		&i.CreatedAt,
 		&i.DeletedAt,
+		&i.Exposed,
+		&i.HostPort,
 	)
 	return i, err
 }
@@ -165,7 +171,7 @@ func (q *Queries) ListAddonOwners(ctx context.Context, addonID int64) ([]User, e
 }
 
 const listAddons = `-- name: ListAddons :many
-SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at FROM addons WHERE deleted_at IS NULL ORDER BY id
+SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at, exposed, host_port FROM addons WHERE deleted_at IS NULL ORDER BY id
 `
 
 func (q *Queries) ListAddons(ctx context.Context) ([]Addon, error) {
@@ -189,6 +195,8 @@ func (q *Queries) ListAddons(ctx context.Context) ([]Addon, error) {
 			&i.ContainerName,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Exposed,
+			&i.HostPort,
 		); err != nil {
 			return nil, err
 		}
@@ -204,7 +212,7 @@ func (q *Queries) ListAddons(ctx context.Context) ([]Addon, error) {
 }
 
 const listAddonsByOwner = `-- name: ListAddonsByOwner :many
-SELECT s.id, s.name, s.engine, s.version, s.cpu_limit, s.memory_limit_mb, s.password, s.status, s.container_name, s.created_at, s.deleted_at FROM addons s
+SELECT s.id, s.name, s.engine, s.version, s.cpu_limit, s.memory_limit_mb, s.password, s.status, s.container_name, s.created_at, s.deleted_at, s.exposed, s.host_port FROM addons s
   INNER JOIN addon_owners o ON o.addon_id = s.id
   WHERE o.user_id = ? AND s.deleted_at IS NULL
   ORDER BY s.id
@@ -231,6 +239,8 @@ func (q *Queries) ListAddonsByOwner(ctx context.Context, userID int64) ([]Addon,
 			&i.ContainerName,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Exposed,
+			&i.HostPort,
 		); err != nil {
 			return nil, err
 		}
@@ -246,7 +256,7 @@ func (q *Queries) ListAddonsByOwner(ctx context.Context, userID int64) ([]Addon,
 }
 
 const listInflightAddons = `-- name: ListInflightAddons :many
-SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at FROM addons WHERE status = 'provisioning' AND deleted_at IS NULL
+SELECT id, name, engine, version, cpu_limit, memory_limit_mb, password, status, container_name, created_at, deleted_at, exposed, host_port FROM addons WHERE status = 'provisioning' AND deleted_at IS NULL
 `
 
 func (q *Queries) ListInflightAddons(ctx context.Context) ([]Addon, error) {
@@ -270,6 +280,8 @@ func (q *Queries) ListInflightAddons(ctx context.Context) ([]Addon, error) {
 			&i.ContainerName,
 			&i.CreatedAt,
 			&i.DeletedAt,
+			&i.Exposed,
+			&i.HostPort,
 		); err != nil {
 			return nil, err
 		}
@@ -295,6 +307,34 @@ type RemoveAddonOwnerParams struct {
 
 func (q *Queries) RemoveAddonOwner(ctx context.Context, arg RemoveAddonOwnerParams) error {
 	_, err := q.db.ExecContext(ctx, removeAddonOwner, arg.AddonID, arg.UserID)
+	return err
+}
+
+const setAddonExposed = `-- name: SetAddonExposed :exec
+UPDATE addons SET exposed = ? WHERE id = ?
+`
+
+type SetAddonExposedParams struct {
+	Exposed bool  `json:"exposed"`
+	ID      int64 `json:"id"`
+}
+
+func (q *Queries) SetAddonExposed(ctx context.Context, arg SetAddonExposedParams) error {
+	_, err := q.db.ExecContext(ctx, setAddonExposed, arg.Exposed, arg.ID)
+	return err
+}
+
+const setAddonHostPort = `-- name: SetAddonHostPort :exec
+UPDATE addons SET host_port = ? WHERE id = ?
+`
+
+type SetAddonHostPortParams struct {
+	HostPort int64 `json:"host_port"`
+	ID       int64 `json:"id"`
+}
+
+func (q *Queries) SetAddonHostPort(ctx context.Context, arg SetAddonHostPortParams) error {
+	_, err := q.db.ExecContext(ctx, setAddonHostPort, arg.HostPort, arg.ID)
 	return err
 }
 

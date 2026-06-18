@@ -23,6 +23,8 @@ func (s *Server) registerAddonsRoutes(r chi.Router) {
 	r.Get("/v1/addons/{addon}", s.handleGetAddon)
 	r.Delete("/v1/addons/{addon}", s.handleDeleteAddon)
 	r.Post("/v1/addons/{addon}/restart", s.handleRestartAddon)
+	r.Post("/v1/addons/{addon}/expose", s.handleExposeAddon)
+	r.Delete("/v1/addons/{addon}/expose", s.handleUnexposeAddon)
 	r.Get("/v1/addons/{addon}/logs", s.handleAddonLogs)
 
 	r.Post("/v1/apps/{app}/links", s.handleCreateLink)
@@ -225,6 +227,47 @@ func (s *Server) handleRestartAddon(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.toAddonResp(r.Context(), addon, true))
 }
 
+// handleExposeAddon turns on external access: it flips the exposed flag and
+// re-provisions the addon so its port is published on the host. The addon is
+// then reachable at <addon>.<root_domain>:<host_port>.
+func (s *Server) handleExposeAddon(w http.ResponseWriter, r *http.Request) {
+	s.setAddonExposure(w, r, true)
+}
+
+// handleUnexposeAddon turns off external access: it clears the exposed flag and
+// re-provisions so the published port is dropped. The host port is retained in
+// the DB so re-exposing later reuses the same port.
+func (s *Server) handleUnexposeAddon(w http.ResponseWriter, r *http.Request) {
+	s.setAddonExposure(w, r, false)
+}
+
+func (s *Server) setAddonExposure(w http.ResponseWriter, r *http.Request, exposed bool) {
+	addon, ok := s.loadOwnedAddon(w, r)
+	if !ok {
+		return
+	}
+	if s.Deployer == nil {
+		writeError(w, api.New(api.ErrInternal, "deployer not configured"))
+		return
+	}
+	if addon.Exposed == exposed {
+		// Already in the desired state; return current view without churning
+		// the container.
+		writeJSON(w, http.StatusOK, s.toAddonResp(r.Context(), addon, true))
+		return
+	}
+	if err := s.Store.SetAddonExposed(r.Context(), addon.ID, exposed); err != nil {
+		writeError(w, err)
+		return
+	}
+	if err := s.Deployer.ProvisionAddon(r.Context(), addon.ID); err != nil {
+		writeError(w, err)
+		return
+	}
+	addon, _ = s.Store.GetAddonByID(r.Context(), addon.ID)
+	writeJSON(w, http.StatusOK, s.toAddonResp(r.Context(), addon, true))
+}
+
 func (s *Server) handleAddonLogs(w http.ResponseWriter, r *http.Request) {
 	addon, ok := s.loadOwnedAddon(w, r)
 	if !ok {
@@ -372,9 +415,14 @@ func (s *Server) toAddonResp(ctx context.Context, addon store.Addon, includeURL 
 		MemoryLimitMB: addon.MemoryLimitMb,
 		Owners:        names,
 		LinkedApps:    apps,
+		Exposed:       addon.Exposed,
+		HostPort:      int(addon.HostPort),
 	}
 	if includeURL {
 		resp.URL = deploy.ConnectionURL(addon.Engine, addon.Name, addon.Password)
+		if addon.Exposed {
+			resp.ExternalURL = deploy.ExternalConnectionURL(addon.Engine, addon.Name, addon.Password, s.RootDomain, addon.HostPort)
+		}
 	}
 	return resp
 }
