@@ -1,19 +1,20 @@
-{{define "title"}}存储卷 · milo console{{end}}
+{{define "title"}}{{call .T "vol.title"}} · milo console{{end}}
 {{define "content"}}
-<h1>存储卷</h1>
+{{$root := .}}
+<h1>{{call .T "vol.title"}}</h1>
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
 {{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
 
 <form method="post" action="/console/admin/volumes/delete" id="vol-form" onsubmit="return confirmBatch()">
   <input type="hidden" name="_csrf" value="{{.CSRF}}">
   <div class="bulkbar">
-    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> 全选</label>
-    <label class="chk small"><input type="checkbox" name="force"> 强制删除（含使用中）</label>
-    <button type="submit" class="btn danger" id="bulk-del" disabled>删除所选 (<span id="cnt">0</span>)</button>
+    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> {{call .T "common.select_all"}}</label>
+    <label class="chk small"><input type="checkbox" name="force"> {{call .T "vol.force"}}</label>
+    <button type="submit" class="btn danger" id="bulk-del" disabled>{{call .T "common.delete_sel"}} (<span id="cnt">0</span>)</button>
   </div>
   <section class="card pad0">
     <table class="tbl">
-      <thead><tr><th class="ta-c">选</th><th>卷名</th><th>类型</th><th>归属实例</th><th>大小</th><th>引用</th><th>状态</th></tr></thead>
+      <thead><tr><th class="ta-c">{{call .T "col.select"}}</th><th>{{call .T "vol.volname"}}</th><th>{{call .T "col.type"}}</th><th>{{call .T "col.instance"}}</th><th>{{call .T "col.size"}}</th><th>{{call .T "col.refs"}}</th><th>{{call .T "col.state"}}</th></tr></thead>
       <tbody>
       {{range .Volumes}}
         <tr>
@@ -27,18 +28,17 @@
             {{else}}<span class="muted">—</span>{{end}}
           </td>
           <td>{{.Size}}</td>
-          <td>{{if .InUse}}<span class="yes ico">使用中</span>{{else}}<span class="muted">空闲</span>{{end}}</td>
-          <td>{{if .Orphan}}<span class="no ico">⚠ 孤立</span>{{else}}<span class="muted">—</span>{{end}}</td>
+          <td>{{if .InUse}}<span class="yes ico">{{call $root.T "vol.in_use"}}</span>{{else}}<span class="muted">{{call $root.T "vol.idle"}}</span>{{end}}</td>
+          <td>{{if .Orphan}}<span class="no ico">{{call $root.T "vol.orphan"}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
         </tr>
       {{else}}
-        <tr><td colspan="7" class="muted">无存储卷</td></tr>
+        <tr><td colspan="7" class="muted">{{call .T "vol.none"}}</td></tr>
       {{end}}
       </tbody>
     </table>
   </section>
 </form>
-<p class="muted">「孤立」= milo 卷的归属 app/addon 已不存在（删实例时未删卷），可安全回收。
-使用中的卷需先删对应实例，或勾「强制删除」。</p>
+<p class="muted">{{call .T "vol.note"}}</p>
 
 <script>
 function rows(){return document.querySelectorAll('.row-ck')}
@@ -49,6 +49,6 @@ function updateCount(){
   var all=document.getElementById('sel-all'); all.checked = n>0 && n===rows().length;
 }
 function toggleAll(src){rows().forEach(function(c){c.checked=src.checked}); updateCount()}
-function confirmBatch(){return confirm('删除选中的 '+document.getElementById('cnt').textContent+' 个卷? 数据不可恢复')}
+function confirmBatch(){return confirm({{call .T "vol.confirm"}})}
 </script>
 {{end}}

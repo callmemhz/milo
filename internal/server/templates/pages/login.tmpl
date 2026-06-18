@@ -1,13 +1,13 @@
-{{define "title"}}登录 · milo console{{end}}
+{{define "title"}}{{call .T "login.title"}} · milo console{{end}}
 {{define "content"}}
 <div class="login-wrap">
   <form class="card login" method="post" action="/console/login">
     <h1>milo console</h1>
     {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
     <input type="hidden" name="_csrf" value="{{.CSRF}}">
-    <label>用户名<input name="username" autocomplete="username" autofocus required></label>
-    <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
-    <button type="submit">登录</button>
+    <label>{{call .T "login.username"}}<input name="username" autocomplete="username" autofocus required></label>
+    <label>{{call .T "login.password"}}<input name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">{{call .T "login.signin"}}</button>
   </form>
 </div>
 {{end}}

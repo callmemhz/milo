@@ -10,8 +10,13 @@ import (
 	"github.com/callmemhz/milo/internal/docker"
 )
 
-// usersFlash redirects back to the users page with an encoded message/error.
-func usersFlash(w http.ResponseWriter, r *http.Request, key, msg string) {
+// usersFlash redirects back to the users page with a translated, encoded
+// message. msgKey is an i18n key; args feed into the (possibly format) string.
+func usersFlash(w http.ResponseWriter, r *http.Request, key, msgKey string, args ...any) {
+	msg := translate(langFromRequest(r), msgKey)
+	if len(args) > 0 {
+		msg = fmt.Sprintf(msg, args...)
+	}
 	http.Redirect(w, r, "/console/users?"+key+"="+url.QueryEscape(msg), http.StatusFound)
 }
 
@@ -80,10 +85,11 @@ func (s *Server) consoleAdmin(w http.ResponseWriter, r *http.Request) {
 		used := hd.Total - hd.Free
 		data["DiskFree"] = map[string]any{
 			"DiskPct": float64(used) / float64(hd.Total) * 100,
-			"DiskNum": humanBytes(used) + " / " + humanBytes(hd.Total) + "（剩 " + humanBytes(hd.Free) + "）",
+			"DiskNum": humanBytes(used) + " / " + humanBytes(hd.Total) + " · " +
+				fmt.Sprintf(translate(langFromRequest(r), "admin.disk_free"), humanBytes(hd.Free)),
 		}
 	}
-	s.render(w, "admin", data)
+	s.render(w, r, "admin", data)
 }
 
 // consoleImages lists local docker images for admin management.
@@ -120,7 +126,7 @@ func (s *Server) consoleImages(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	s.render(w, "images", map[string]any{
+	s.render(w, r, "images", map[string]any{
 		"User":   id.User.Username,
 		"Admin":  true,
 		"CSRF":   s.ensureCSRF(w, r),
@@ -132,21 +138,22 @@ func (s *Server) consoleImages(w http.ResponseWriter, r *http.Request) {
 
 // consoleImageDelete removes one or more selected images (multi-select batch).
 func (s *Server) consoleImageDelete(w http.ResponseWriter, r *http.Request) {
+	lang := langFromRequest(r)
 	imagesFlash := func(key, msg string) {
 		http.Redirect(w, r, "/console/admin/images?"+key+"="+url.QueryEscape(msg), http.StatusFound)
 	}
 	if !s.checkCSRF(r) {
-		imagesFlash("err", "会话过期，请重试")
+		imagesFlash("err", translate(lang, "login.expired"))
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		imagesFlash("err", "表单解析失败")
+		imagesFlash("err", translate(lang, "m.form_parse"))
 		return
 	}
 	ids := r.Form["ids"]
 	force := r.FormValue("force") == "on"
 	if s.Runtime == nil || len(ids) == 0 {
-		imagesFlash("err", "未选择任何镜像")
+		imagesFlash("err", translate(lang, "m.no_img_sel"))
 		return
 	}
 	ok, failed := 0, 0
@@ -160,9 +167,9 @@ func (s *Server) consoleImageDelete(w http.ResponseWriter, r *http.Request) {
 			ok++
 		}
 	}
-	msg := fmt.Sprintf("已删除 %d 个镜像", ok)
+	msg := fmt.Sprintf(translate(lang, "m.img_deleted"), ok)
 	if failed > 0 {
-		msg += fmt.Sprintf("，%d 个失败（可能被容器占用，可勾选强制）", failed)
+		msg += fmt.Sprintf(translate(lang, "m.img_failed"), failed)
 	}
 	imagesFlash("msg", msg)
 }
@@ -192,7 +199,7 @@ func (s *Server) consoleUsers(w http.ResponseWriter, r *http.Request) {
 			Created:     u.CreatedAt.Format("2006-01-02"),
 		})
 	}
-	s.render(w, "users", map[string]any{
+	s.render(w, r, "users", map[string]any{
 		"User":  id.User.Username,
 		"Admin": true,
 		"Self":  id.User.Username,
@@ -205,7 +212,7 @@ func (s *Server) consoleUsers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) consoleUserCreate(w http.ResponseWriter, r *http.Request) {
 	if !s.checkCSRF(r) {
-		usersFlash(w, r, "err", "会话过期，请重试")
+		usersFlash(w, r, "err", "login.expired")
 		return
 	}
 	username := r.FormValue("username")
@@ -213,105 +220,105 @@ func (s *Server) consoleUserCreate(w http.ResponseWriter, r *http.Request) {
 	isAdmin := r.FormValue("is_admin") == "on"
 
 	if !validUsername(username) {
-		usersFlash(w, r, "err", "用户名不合法")
+		usersFlash(w, r, "err", "m.bad_username")
 		return
 	}
 	if len(password) < 8 {
-		usersFlash(w, r, "err", "密码至少 8 位")
+		usersFlash(w, r, "err", "m.pw_short")
 		return
 	}
 	u, err := s.Store.CreateUser(r.Context(), username, isAdmin)
 	if err != nil {
-		usersFlash(w, r, "err", "用户名已存在")
+		usersFlash(w, r, "err", "m.user_exists")
 		return
 	}
 	hash, err := auth.HashPassword(password)
 	if err != nil {
-		usersFlash(w, r, "err", "设密失败")
+		usersFlash(w, r, "err", "m.set_pw_failed")
 		return
 	}
 	_ = s.Store.SetUserPassword(r.Context(), u.ID, hash)
-	usersFlash(w, r, "msg", "已创建 "+username)
+	usersFlash(w, r, "msg", "m.created", username)
 }
 
 func (s *Server) consoleUserSetPassword(w http.ResponseWriter, r *http.Request) {
 	if !s.checkCSRF(r) {
-		usersFlash(w, r, "err", "会话过期，请重试")
+		usersFlash(w, r, "err", "login.expired")
 		return
 	}
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	if len(password) < 8 {
-		usersFlash(w, r, "err", "密码至少 8 位")
+		usersFlash(w, r, "err", "m.pw_short")
 		return
 	}
 	u, err := s.Store.GetUserByUsername(r.Context(), username)
 	if err != nil {
-		usersFlash(w, r, "err", "用户不存在")
+		usersFlash(w, r, "err", "m.user_missing")
 		return
 	}
 	hash, err := auth.HashPassword(password)
 	if err != nil {
-		usersFlash(w, r, "err", "设密失败")
+		usersFlash(w, r, "err", "m.set_pw_failed")
 		return
 	}
 	_ = s.Store.SetUserPassword(r.Context(), u.ID, hash)
-	usersFlash(w, r, "msg", "已重置 "+username+" 的密码")
+	usersFlash(w, r, "msg", "m.pw_reset", username)
 }
 
 func (s *Server) consoleUserFreeze(w http.ResponseWriter, r *http.Request) {
 	if !s.checkCSRF(r) {
-		usersFlash(w, r, "err", "会话过期，请重试")
+		usersFlash(w, r, "err", "login.expired")
 		return
 	}
 	id, _ := auth.IdentityFromContext(r.Context())
 	username := r.FormValue("username")
 	want := r.FormValue("frozen") == "true"
 	if username == id.User.Username {
-		usersFlash(w, r, "err", "不能冻结自己")
+		usersFlash(w, r, "err", "m.self_freeze")
 		return
 	}
 	u, err := s.Store.GetUserByUsername(r.Context(), username)
 	if err != nil {
-		usersFlash(w, r, "err", "用户不存在")
+		usersFlash(w, r, "err", "m.user_missing")
 		return
 	}
 	if err := s.Store.SetUserFrozen(r.Context(), u.ID, want); err != nil {
-		usersFlash(w, r, "err", "操作失败")
+		usersFlash(w, r, "err", "m.op_failed")
 		return
 	}
 	if want {
 		// Kick the user out immediately by dropping all browser sessions.
 		_ = s.Store.DeleteUserSessions(r.Context(), u.ID)
-		usersFlash(w, r, "msg", "已冻结 "+username+"（账号保留，无法登录/调用）")
+		usersFlash(w, r, "msg", "m.frozen", username)
 		return
 	}
-	usersFlash(w, r, "msg", "已解冻 "+username)
+	usersFlash(w, r, "msg", "m.unfrozen", username)
 }
 
 func (s *Server) consoleUserDelete(w http.ResponseWriter, r *http.Request) {
 	if !s.checkCSRF(r) {
-		usersFlash(w, r, "err", "会话过期，请重试")
+		usersFlash(w, r, "err", "login.expired")
 		return
 	}
 	id, _ := auth.IdentityFromContext(r.Context())
 	username := r.FormValue("username")
 	if username == id.User.Username {
-		usersFlash(w, r, "err", "不能删除自己")
+		usersFlash(w, r, "err", "m.self_delete")
 		return
 	}
 	u, err := s.Store.GetUserByUsername(r.Context(), username)
 	if err != nil {
-		usersFlash(w, r, "err", "用户不存在")
+		usersFlash(w, r, "err", "m.user_missing")
 		return
 	}
 	if u.IsAdmin {
 		if n, _ := s.Store.CountAdmins(r.Context()); n <= 1 {
-			usersFlash(w, r, "err", "不能删除最后一个管理员")
+			usersFlash(w, r, "err", "m.last_admin")
 			return
 		}
 	}
 	_ = s.Store.SoftDeleteUser(r.Context(), u.ID)
 	_ = s.Store.DeleteUserSessions(r.Context(), u.ID)
-	usersFlash(w, r, "msg", "已删除 "+username)
+	usersFlash(w, r, "msg", "m.deleted", username)
 }

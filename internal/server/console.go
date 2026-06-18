@@ -75,6 +75,7 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 	r.Handle("/console/assets/*", http.StripPrefix("/console/assets/", http.FileServer(http.FS(sub))))
 
 	// Public (no session required).
+	r.Get("/console/lang", s.handleSetLang)
 	r.Get("/console/login", s.consoleLoginForm)
 	r.Post("/console/login", s.consoleLoginSubmit)
 	r.Post("/console/logout", s.consoleLogout)
@@ -189,8 +190,9 @@ func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// render executes a page template wrapped in the base layout.
-func (s *Server) render(w http.ResponseWriter, page string, data map[string]any) {
+// render executes a page template wrapped in the base layout, injecting the
+// per-request translator (T) and current language.
+func (s *Server) render(w http.ResponseWriter, r *http.Request, page string, data map[string]any) {
 	t, ok := s.tmpls[page]
 	if !ok {
 		http.Error(w, "template not found: "+page, http.StatusInternalServerError)
@@ -199,6 +201,9 @@ func (s *Server) render(w http.ResponseWriter, page string, data map[string]any)
 	if data == nil {
 		data = map[string]any{}
 	}
+	lang := langFromRequest(r)
+	data["Lang"] = lang
+	data["T"] = func(key string) string { return translate(lang, key) }
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := t.ExecuteTemplate(w, "base", data); err != nil {
 		// Headers may already be sent; log-and-move-on.

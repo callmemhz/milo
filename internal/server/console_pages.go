@@ -65,7 +65,7 @@ func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
 	apps, _ := s.Store.ListAppsByOwner(ctx, id.User.ID)
 	addons, _ := s.Store.ListAddonsByOwner(ctx, id.User.ID)
 
-	s.render(w, "dashboard", map[string]any{
+	s.render(w, r, "dashboard", map[string]any{
 		"User":   id.User.Username,
 		"Admin":  id.User.IsAdmin,
 		"CSRF":   s.ensureCSRF(w, r),
@@ -81,7 +81,7 @@ func (s *Server) consoleAllInstances(w http.ResponseWriter, r *http.Request) {
 	apps, _ := s.Store.ListApps(ctx)
 	addons, _ := s.Store.ListAddons(ctx)
 
-	s.render(w, "instances", map[string]any{
+	s.render(w, r, "instances", map[string]any{
 		"User":   id.User.Username,
 		"Admin":  true,
 		"CSRF":   s.ensureCSRF(w, r),
@@ -115,6 +115,7 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		address = "https://" + a.Name + "." + s.RootDomain
 	}
 
+	lang := langFromRequest(r)
 	// Data volume usage.
 	volName := fmt.Sprintf("milo-app-%s-data", a.Name)
 	volume := "—"
@@ -122,7 +123,7 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		if sz, ok := s.Runtime.VolumeSize(ctx, volName); ok {
 			volume = humanBytes(uint64(sz))
 		} else {
-			volume = "未使用"
+			volume = translate(lang, "f.unused")
 		}
 	}
 
@@ -135,7 +136,7 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.render(w, "app", map[string]any{
+	s.render(w, r, "app", map[string]any{
 		"User":    id.User.Username,
 		"Admin":   id.User.IsAdmin,
 		"CSRF":    s.ensureCSRF(w, r),
@@ -143,7 +144,7 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		"State":   state,
 		"Uptime":  uptime,
 		"Port":    a.Port,
-		"Spec":    fmt.Sprintf("%s 核 / %d MB", strconv.FormatFloat(a.CpuLimit, 'g', -1, 64), a.MemoryLimitMb),
+		"Spec":    fmt.Sprintf("%s %s / %d MB", strconv.FormatFloat(a.CpuLimit, 'g', -1, 64), translate(lang, "unit.cores"), a.MemoryLimitMb),
 		"Image":   image,
 		"Ref":     ref,
 		"Address": address,
@@ -194,13 +195,14 @@ func (s *Server) streamContainerLogsSSE(w http.ResponseWriter, r *http.Request, 
 		return
 	}
 	sseHeaders(w)
+	lang := langFromRequest(r)
 	if name == "" || s.Docker == nil {
-		sseEvent(w, flusher, "message", "（暂无运行中的容器）")
+		sseEvent(w, flusher, "message", translate(lang, "sse.no_ctr"))
 		return
 	}
 	rc, err := s.Docker.Logs(r.Context(), name, true, "200")
 	if err != nil {
-		sseEvent(w, flusher, "message", "无法读取日志: "+err.Error())
+		sseEvent(w, flusher, "message", fmt.Sprintf(translate(lang, "sse.log_error"), err.Error()))
 		return
 	}
 	defer rc.Close()

@@ -1,9 +1,10 @@
-{{define "title"}}全部实例 · milo console{{end}}
+{{define "title"}}{{call .T "nav.all_instances"}} · milo console{{end}}
 {{define "content"}}
-<h1>全部实例（管理员）</h1>
+{{$root := .}}
+<h1>{{call .T "inst.title"}}</h1>
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>App</th><th>归属</th><th>状态</th><th>运行</th><th>内存</th></tr></thead>
+    <thead><tr><th>{{call .T "col.app"}}</th><th>{{call .T "col.owner"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th></tr></thead>
     <tbody>
     {{range .Apps}}
       <tr>
@@ -14,16 +15,16 @@
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
       </tr>
     {{else}}
-      <tr><td colspan="5" class="muted">无 app</td></tr>
+      <tr><td colspan="5" class="muted">{{call .T "inst.no_apps"}}</td></tr>
     {{end}}
     </tbody>
   </table>
 </section>
 
-<h1>全部 Add-ons</h1>
+<h1>{{call .T "inst.all_addons"}}</h1>
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>名称</th><th>归属</th><th>引擎</th><th>状态</th><th>运行</th><th>内存</th><th>外部访问</th></tr></thead>
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.owner"}}</th><th>{{call .T "col.engine"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th><th>{{call .T "col.external"}}</th></tr></thead>
     <tbody>
     {{range .Addons}}
       <tr>
@@ -33,10 +34,10 @@
         <td><span class="badge state-{{.Status}}">{{.Status}}</span></td>
         <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
-        <td>{{if .Exposed}}<span class="yes ico">✓ 开启</span>{{else}}<span class="no ico">✕ 关闭</span>{{end}}</td>
+        <td>{{if .Exposed}}<span class="yes ico">{{call $root.T "common.on"}}</span>{{else}}<span class="no ico">{{call $root.T "common.off"}}</span>{{end}}</td>
       </tr>
     {{else}}
-      <tr><td colspan="7" class="muted">无 add-on</td></tr>
+      <tr><td colspan="7" class="muted">{{call .T "inst.no_addons"}}</td></tr>
     {{end}}
     </tbody>
   </table>

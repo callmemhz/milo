@@ -1,56 +1,57 @@
-{{define "title"}}宿主机 · milo console{{end}}
+{{define "title"}}{{call .T "nav.host"}} · milo console{{end}}
 {{define "content"}}
-<h1>宿主机状态</h1>
+{{$root := .}}
+<h1>{{call .T "admin.host_status"}}</h1>
 {{with .Host}}
 <section class="card">
-  <h2>主机</h2>
+  <h2>{{call $root.T "admin.host"}}</h2>
   <dl class="specs">
-    <div class="cell"><dt>Docker 版本</dt><dd>{{.ServerVersion}}</dd></div>
-    <div class="cell"><dt>系统</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
-    <div class="cell"><dt>CPU 核数</dt><dd>{{.NCPU}}</dd></div>
-    <div class="cell"><dt>内存总量</dt><dd>{{.MemTotal}}</dd></div>
-    <div class="cell"><dt>容器</dt><dd>{{.ContainersRunning}} 运行 / {{.Containers}} 总</dd></div>
-    <div class="cell"><dt>镜像</dt><dd>{{.Images}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.docker_ver"}}</dt><dd>{{.ServerVersion}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.os"}}</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.ncpu"}}</dt><dd>{{.NCPU}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.mem_total"}}</dt><dd>{{.MemTotal}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.containers"}}</dt><dd>{{.ContainersRunning}} {{call $root.T "admin.running_of"}} {{.Containers}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.images_cnt"}}</dt><dd>{{.Images}}</dd></div>
   </dl>
 </section>
 {{else}}
-<p class="muted">无法读取 docker 宿主机信息。</p>
+<p class="muted">{{call .T "admin.no_host"}}</p>
 {{end}}
 
 {{with .Load}}
 <section class="card">
-  <h2>负载</h2>
-  {{meter "CPU" .LoadPct .LoadNum}}
-  {{if .MemNum}}{{meter "内存" .MemPct .MemNum}}{{end}}
-  <p class="muted" style="margin-top:8px;font-size:12px">CPU 进度条 = 1 分钟负载 / 核数；负载数字为 1m / 5m / 15m。</p>
+  <h2>{{call $root.T "admin.load"}}</h2>
+  {{meter (call $root.T "f.cpu") .LoadPct .LoadNum}}
+  {{if .MemNum}}{{meter (call $root.T "f.mem") .MemPct .MemNum}}{{end}}
+  <p class="muted" style="margin-top:8px;font-size:12px">{{call $root.T "admin.load_note"}}</p>
 </section>
 {{end}}
 
 {{with .Disk}}
 <section class="card">
-  <h2>磁盘（docker 占用）</h2>
+  <h2>{{call $root.T "admin.disk"}}</h2>
   <dl class="specs">
-    <div class="cell"><dt>镜像</dt><dd>{{.Images}}</dd></div>
-    <div class="cell"><dt>容器</dt><dd>{{.Containers}}</dd></div>
-    <div class="cell"><dt>卷</dt><dd>{{.Volumes}}</dd></div>
-    <div class="cell"><dt>构建缓存</dt><dd>{{.BuildCache}}</dd></div>
-    <div class="cell"><dt>合计</dt><dd>{{.Total}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_images"}}</dt><dd>{{.Images}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_ctr"}}</dt><dd>{{.Containers}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_vol"}}</dt><dd>{{.Volumes}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_cache"}}</dt><dd>{{.BuildCache}}</dd></div>
+    <div class="cell"><dt>{{call $root.T "admin.disk_total"}}</dt><dd>{{.Total}}</dd></div>
   </dl>
-  {{with $.DiskFree}}
-  <div style="margin-top:12px">{{meter "磁盘" .DiskPct .DiskNum}}</div>
+  {{with $root.DiskFree}}
+  <div style="margin-top:12px">{{meter (call $root.T "f.disk") .DiskPct .DiskNum}}</div>
   {{end}}
-  <p class="muted" style="margin-top:12px"><a href="/console/admin/images">→ 本地镜像管理</a> · <a href="/console/admin/volumes">存储卷管理</a></p>
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/images">{{call $root.T "admin.manage_imgs"}}</a> · <a href="/console/admin/volumes">{{call $root.T "admin.manage_vols"}}</a></p>
 </section>
 {{end}}
 
-<h1>milo 资源</h1>
+<h1>{{call .T "admin.resources"}}</h1>
 <section class="card">
   <dl class="specs">
     <div class="cell"><dt>App</dt><dd>{{.AppCount}}</dd></div>
     <div class="cell"><dt>Add-on</dt><dd>{{.AddonCount}}</dd></div>
-    <div class="cell"><dt>用户</dt><dd>{{.UserCount}}</dd></div>
-    <div class="cell"><dt>控制面版本</dt><dd>{{.Version}}</dd></div>
+    <div class="cell"><dt>{{call .T "nav.users"}}</dt><dd>{{.UserCount}}</dd></div>
+    <div class="cell"><dt>{{call .T "admin.cp_version"}}</dt><dd>{{.Version}}</dd></div>
   </dl>
-  <p class="muted" style="margin-top:12px"><a href="/console/admin/instances">→ 查看全部实例</a></p>
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/instances">{{call .T "admin.view_all"}}</a></p>
 </section>
 {{end}}

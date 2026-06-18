@@ -1,44 +1,45 @@
-{{define "title"}}用户 · milo console{{end}}
+{{define "title"}}{{call .T "nav.users"}} · milo console{{end}}
 {{define "content"}}
-<h1>用户管理</h1>
+{{$root := .}}
+<h1>{{call .T "users.title"}}</h1>
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
 {{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
 
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>用户名</th><th>角色</th><th>状态</th><th>密码</th><th>创建</th><th>操作</th></tr></thead>
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.role"}}</th><th>{{call .T "users.status"}}</th><th>{{call .T "col.password"}}</th><th>{{call .T "col.created"}}</th><th>{{call .T "col.actions"}}</th></tr></thead>
     <tbody>
     {{range .Users}}
       <tr>
         <td class="mono">{{.Username}}</td>
         <td>{{if .IsAdmin}}<span class="badge admin">admin</span>{{else}}user{{end}}</td>
-        <td>{{if .Frozen}}<span class="no ico">✕ 已冻结</span>{{else}}<span class="yes ico">● 正常</span>{{end}}</td>
-        <td>{{if .HasPassword}}<span class="ok-dot">已设</span>{{else}}<span class="muted">未设</span>{{end}}</td>
+        <td>{{if .Frozen}}<span class="no ico">{{call $root.T "users.frozen"}}</span>{{else}}<span class="yes ico">{{call $root.T "users.active"}}</span>{{end}}</td>
+        <td>{{if .HasPassword}}<span class="ok-dot">{{call $root.T "users.pw_set"}}</span>{{else}}<span class="muted">{{call $root.T "users.pw_unset"}}</span>{{end}}</td>
         <td class="muted">{{.Created}}</td>
         <td class="row-actions">
           <form method="post" action="/console/users/password" class="inline">
-            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="_csrf" value="{{$root.CSRF}}">
             <input type="hidden" name="username" value="{{.Username}}">
-            <input type="password" name="password" placeholder="新密码" minlength="8" required>
-            <button type="submit">重置密码</button>
+            <input type="password" name="password" placeholder="{{call $root.T "users.new_pw"}}" minlength="8" required>
+            <button type="submit">{{call $root.T "users.reset_pw"}}</button>
           </form>
-          {{if ne .Username $.Self}}
+          {{if ne .Username $root.Self}}
           <form method="post" action="/console/users/freeze" class="inline">
-            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="_csrf" value="{{$root.CSRF}}">
             <input type="hidden" name="username" value="{{.Username}}">
             {{if .Frozen}}
             <input type="hidden" name="frozen" value="false">
-            <button type="submit" class="btn on">解冻</button>
+            <button type="submit" class="btn on">{{call $root.T "users.unfreeze"}}</button>
             {{else}}
             <input type="hidden" name="frozen" value="true">
-            <button type="submit" class="btn" onclick="return confirm('冻结 {{.Username}}? 账号保留但将无法登录/调用')">冻结</button>
+            <button type="submit" class="btn" onclick="return confirm({{call $root.T "users.confirm_freeze"}})">{{call $root.T "users.freeze"}}</button>
             {{end}}
           </form>
           <form method="post" action="/console/users/delete" class="inline"
-                onsubmit="return confirm('删除用户 {{.Username}}?')">
-            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+                onsubmit="return confirm({{call $root.T "users.confirm_delete"}})">
+            <input type="hidden" name="_csrf" value="{{$root.CSRF}}">
             <input type="hidden" name="username" value="{{.Username}}">
-            <button type="submit" class="danger">删除</button>
+            <button type="submit" class="danger">{{call $root.T "common.delete"}}</button>
           </form>
           {{end}}
         </td>
@@ -48,14 +49,14 @@
   </table>
 </section>
 
-<h1>新建用户</h1>
+<h1>{{call .T "users.new_title"}}</h1>
 <section class="card">
   <form method="post" action="/console/users/create" class="form-row">
     <input type="hidden" name="_csrf" value="{{.CSRF}}">
-    <input name="username" placeholder="用户名" required>
-    <input type="password" name="password" placeholder="初始密码（≥8位）" minlength="8" required>
-    <label class="chk"><input type="checkbox" name="is_admin"> 管理员</label>
-    <button type="submit">创建</button>
+    <input name="username" placeholder="{{call .T "users.uname_ph"}}" required>
+    <input type="password" name="password" placeholder="{{call .T "users.initpw_ph"}}" minlength="8" required>
+    <label class="chk"><input type="checkbox" name="is_admin"> {{call .T "users.is_admin"}}</label>
+    <button type="submit">{{call .T "users.create"}}</button>
   </form>
 </section>
 {{end}}
