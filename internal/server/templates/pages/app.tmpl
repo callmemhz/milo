@@ -1,0 +1,30 @@
+{{define "title"}}{{.Name}} · milo console{{end}}
+{{define "content"}}
+<p class="crumb"><a href="/console">← 概览</a></p>
+<div class="app-head">
+  <h1>{{.Name}}</h1>
+  <span class="badge state-{{.State}}">{{.State}}</span>
+</div>
+
+<section class="card">
+  <h2>概况</h2>
+  <dl class="kv wide">
+    <div><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div><dt>端口</dt><dd>{{.Port}}</dd></div>
+    <div><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
+    {{if .Ref}}<div><dt>Ref</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
+  </dl>
+  <div class="live" hx-ext="sse" sse-connect="/console/apps/{{.Name}}/stats/stream">
+    <div class="metrics" sse-swap="stats" hx-swap="innerHTML">
+      <span class="muted">连接负载流…</span>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>实时日志</h2>
+  <div hx-ext="sse" sse-connect="/console/apps/{{.Name}}/logs/stream">
+    <pre class="logs" sse-swap="message" hx-swap="beforeend"></pre>
+  </div>
+</section>
+{{end}}

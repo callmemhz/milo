@@ -43,12 +43,14 @@ type RunSpec struct {
 
 // ContainerInfo holds summarised state for a container.
 type ContainerInfo struct {
-	Name     string
-	State    string
-	Image    string
-	Network  bool
-	Labels   map[string]string
-	HostPort int
+	Name         string
+	State        string
+	Image        string
+	Network      bool
+	Labels       map[string]string
+	HostPort     int
+	StartedAt    string // RFC3339, empty if never started
+	RestartCount int
 }
 
 // Run creates and starts a container according to spec. Returns the container ID.
@@ -168,10 +170,14 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerInfo
 	}
 
 	info := &ContainerInfo{
-		Name:   insp.Name,
-		State:  insp.State.Status,
-		Image:  insp.Config.Image,
-		Labels: insp.Config.Labels,
+		Name:         insp.Name,
+		State:        insp.State.Status,
+		Image:        insp.Config.Image,
+		Labels:       insp.Config.Labels,
+		RestartCount: insp.RestartCount,
+	}
+	if insp.State != nil {
+		info.StartedAt = insp.State.StartedAt
 	}
 
 	// Check if container is on the milo network.

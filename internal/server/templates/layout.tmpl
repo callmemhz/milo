@@ -1,0 +1,28 @@
+{{define "base"}}<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}milo console{{end}}</title>
+  <link rel="stylesheet" href="/console/assets/styles.css">
+  <script src="/console/assets/htmx.min.js"></script>
+  <script src="/console/assets/htmx-ext-sse.js"></script>
+</head>
+<body>
+{{if .User}}
+  <header class="topbar">
+    <a class="brand" href="/console">milo</a>
+    <nav>
+      <span class="who">{{.User}}{{if .Admin}} · admin{{end}}</span>
+      <form method="post" action="/console/logout" class="inline">
+        <input type="hidden" name="_csrf" value="{{.CSRF}}">
+        <button class="link" type="submit">登出</button>
+      </form>
+    </nav>
+  </header>
+{{end}}
+  <main>
+    {{block "content" .}}{{end}}
+  </main>
+</body>
+</html>{{end}}
