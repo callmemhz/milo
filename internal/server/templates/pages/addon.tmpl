@@ -5,17 +5,35 @@
   <h1>{{.Name}}</h1>
   <span class="badge state-{{.State}}">{{.State}}</span>
 </div>
+{{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
 
 <section class="card">
   <h2>概况</h2>
-  <dl class="kv wide">
-    <div><dt>引擎</dt><dd>{{.Engine}} {{.Version}}</dd></div>
-    <div><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
-    <div><dt>内存</dt><dd>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</dd></div>
-    <div><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
-    <div><dt>外部访问</dt><dd>{{if .Exposed}}已开启{{else}}关闭{{end}}</dd></div>
-    {{if .ExternalHost}}<div><dt>外部地址</dt><dd class="mono">{{.ExternalHost}}</dd></div>{{end}}
+  <dl class="specs">
+    <div class="cell"><dt>引擎</dt><dd>{{.Engine}} {{.Version}}</dd></div>
+    <div class="cell"><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>规格</dt><dd>{{.Spec}}</dd></div>
+    <div class="cell"><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>内存</dt><dd>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
+    <div class="cell"><dt>外部访问</dt><dd>{{if .Exposed}}<span class="tag use">已开启</span>{{else}}<span class="tag free">关闭</span>{{end}}</dd></div>
+    {{if .ExternalHost}}<div class="cell"><dt>外部地址</dt><dd class="mono">{{.ExternalHost}}</dd></div>{{end}}
   </dl>
+
+  <div class="actions" style="margin-top:14px;display:flex;gap:10px;align-items:center">
+    <form method="post" action="/console/addons/{{.Name}}/expose" class="inline">
+      <input type="hidden" name="_csrf" value="{{.CSRF}}">
+      {{if .Exposed}}
+      <input type="hidden" name="exposed" value="false">
+      <button type="submit" class="btn">关闭外部访问</button>
+      {{else}}
+      <input type="hidden" name="exposed" value="true">
+      <button type="submit" class="btn on">开启外部访问</button>
+      {{end}}
+    </form>
+    <span class="muted" style="font-size:12px">开关会原地重建容器（短暂中断），数据保留。</span>
+  </div>
+
   {{if .ExternalURL}}
   <details class="reveal">
     <summary>连接串（含密码）</summary>

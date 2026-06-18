@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 )
 
@@ -78,6 +79,24 @@ func (c *Client) ImageList(ctx context.Context) ([]Image, error) {
 func (c *Client) ImageRemove(ctx context.Context, id string, force bool) error {
 	_, err := c.cli.ImageRemove(ctx, id, image.RemoveOptions{Force: force, PruneChildren: true})
 	return err
+}
+
+// ImageUsage maps image ID -> display names of containers using it (running or
+// stopped). Used to show which images are in use and by which instance.
+func (c *Client) ImageUsage(ctx context.Context) (map[string][]string, error) {
+	cs, err := c.cli.ContainerList(ctx, container.ListOptions{All: true})
+	if err != nil {
+		return nil, err
+	}
+	out := map[string][]string{}
+	for _, ct := range cs {
+		name := ct.Labels["milo.app"]
+		if name == "" && len(ct.Names) > 0 {
+			name = strings.TrimPrefix(ct.Names[0], "/")
+		}
+		out[ct.ImageID] = append(out[ct.ImageID], name)
+	}
+	return out, nil
 }
 
 // HostLoad is host-level load read from /proc (kernel-global, so visible from

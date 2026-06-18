@@ -8,14 +8,16 @@
 
 <section class="card">
   <h2>概况</h2>
-  <dl class="kv wide">
-    <div><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
-    <div><dt>端口</dt><dd>{{.Port}}</dd></div>
-    <div><dt>是否暴露</dt><dd>是（HTTP）</dd></div>
-    {{if .Address}}<div><dt>访问地址</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
-    <div><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
-    <div><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
-    {{if .Ref}}<div><dt>Ref</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
+  <dl class="specs">
+    <div class="cell"><dt>状态</dt><dd>{{.State}}</dd></div>
+    <div class="cell"><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>规格</dt><dd>{{.Spec}}</dd></div>
+    <div class="cell"><dt>端口</dt><dd>{{.Port}}</dd></div>
+    <div class="cell"><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
+    {{if .Ref}}<div class="cell"><dt>Ref</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
+    <div class="cell"><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
+    <div class="cell"><dt>是否暴露</dt><dd><span class="tag use">是 · HTTP</span></dd></div>
+    {{if .Address}}<div class="cell"><dt>访问地址</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
   </dl>
   <div class="live" hx-ext="sse" sse-connect="/console/apps/{{.Name}}/stats/stream">
     <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">连接负载流…</span></div>

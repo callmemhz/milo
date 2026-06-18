@@ -67,6 +67,14 @@ func (s *Server) consoleAdmin(w http.ResponseWriter, r *http.Request) {
 			"MemTotal": humanBytes(hl.MemTotal),
 		}
 	}
+	// Host disk free for the data filesystem.
+	if hd := docker.ReadHostDisk("/var/lib/milo"); hd.OK {
+		data["DiskFree"] = map[string]any{
+			"Free":  humanBytes(hd.Free),
+			"Total": humanBytes(hd.Total),
+			"Used":  humanBytes(hd.Total - hd.Free),
+		}
+	}
 	s.render(w, "admin", data)
 }
 
@@ -76,27 +84,31 @@ func (s *Server) consoleImages(w http.ResponseWriter, r *http.Request) {
 	id, _ := auth.IdentityFromContext(ctx)
 
 	type imgRow struct {
-		ID    string
-		Short string
-		Tags  string
-		Size  string
+		ID     string
+		Short  string
+		Tags   string
+		Size   string
+		InUse  bool
+		UsedBy string
 	}
 	var rows []imgRow
 	if s.Runtime != nil {
+		usage, _ := s.Runtime.ImageUsage(ctx)
 		if imgs, err := s.Runtime.ImageList(ctx); err == nil {
 			for _, im := range imgs {
 				tags := "<none>"
 				if len(im.RepoTags) > 0 {
 					tags = strings.Join(im.RepoTags, ", ")
 				}
-				short := im.ID
-				if strings.HasPrefix(short, "sha256:") {
-					short = short[7:]
-				}
+				short := strings.TrimPrefix(im.ID, "sha256:")
 				if len(short) > 12 {
 					short = short[:12]
 				}
-				rows = append(rows, imgRow{ID: im.ID, Short: short, Tags: tags, Size: humanBytes(uint64(im.Size))})
+				users := usage[im.ID]
+				rows = append(rows, imgRow{
+					ID: im.ID, Short: short, Tags: tags, Size: humanBytes(uint64(im.Size)),
+					InUse: len(users) > 0, UsedBy: strings.Join(users, ", "),
+				})
 			}
 		}
 	}

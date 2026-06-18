@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/go-chi/chi/v5"
@@ -142,6 +143,7 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		"State":   state,
 		"Uptime":  uptime,
 		"Port":    a.Port,
+		"Spec":    fmt.Sprintf("%s 核 / %d MB", strconv.FormatFloat(a.CpuLimit, 'g', -1, 64), a.MemoryLimitMb),
 		"Image":   image,
 		"Ref":     ref,
 		"Address": address,
