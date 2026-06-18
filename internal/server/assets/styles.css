@@ -97,3 +97,18 @@ button.danger{color:var(--bad)!important}
 .ta-r{text-align:right}
 .img-del{display:inline-flex;align-items:center;gap:10px;justify-content:flex-end}
 .img-del .chk.small{white-space:nowrap}
+/* meters: percentage / ratio bars */
+.meter{display:flex;align-items:center;gap:10px;margin:6px 0}
+.meter .mlbl{color:var(--muted);font-size:12px;width:44px;flex:none}
+.meter .num{font-variant-numeric:tabular-nums;font-size:12px;white-space:nowrap;color:var(--fg)}
+.bar{position:relative;flex:1;min-width:90px;max-width:240px;height:7px;
+  background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .4s ease}
+.bar.ok>i{background:var(--ok)} .bar.warn>i{background:var(--warn)} .bar.bad>i{background:var(--bad)}
+.metrics .meter{margin:0;min-width:200px}
+/* icons (unicode, dependency-free) */
+.ico{font-style:normal;font-size:12px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px;vertical-align:middle}
+.dot.running{background:var(--ok)} .dot.deploying,.dot.provisioning,.dot.pending{background:var(--warn)}
+.dot.failed,.dot.down,.dot.exited,.dot.error{background:var(--bad)}
+.yes{color:var(--ok)} .no{color:var(--muted)}

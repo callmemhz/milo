@@ -33,8 +33,10 @@ func (s *Server) consoleAdmin(w http.ResponseWriter, r *http.Request) {
 		"UserCount":  len(users),
 		"Version":    s.Version,
 	}
+	ncpu := 0
 	if s.Runtime != nil {
 		if hi, err := s.Runtime.Info(ctx); err == nil {
+			ncpu = hi.NCPU
 			data["Host"] = map[string]any{
 				"ServerVersion":     hi.ServerVersion,
 				"OS":                hi.OperatingSystem,
@@ -58,21 +60,27 @@ func (s *Server) consoleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	// Host load (read from /proc; reflects the docker host/VM).
 	if hl := docker.ReadHostLoad(); hl.OK {
-		used := hl.MemTotal - hl.MemAvail
-		data["Load"] = map[string]any{
-			"L1":       fmt.Sprintf("%.2f", hl.Load1),
-			"L5":       fmt.Sprintf("%.2f", hl.Load5),
-			"L15":      fmt.Sprintf("%.2f", hl.Load15),
-			"MemUsed":  humanBytes(used),
-			"MemTotal": humanBytes(hl.MemTotal),
+		loadPct := 0.0
+		if ncpu > 0 {
+			loadPct = hl.Load1 / float64(ncpu) * 100
 		}
+		ld := map[string]any{
+			"LoadPct": loadPct,
+			"LoadNum": fmt.Sprintf("%.2f / %.2f / %.2f", hl.Load1, hl.Load5, hl.Load15),
+		}
+		if hl.MemTotal > 0 {
+			used := hl.MemTotal - hl.MemAvail
+			ld["MemPct"] = float64(used) / float64(hl.MemTotal) * 100
+			ld["MemNum"] = humanBytes(used) + " / " + humanBytes(hl.MemTotal)
+		}
+		data["Load"] = ld
 	}
 	// Host disk free for the data filesystem.
-	if hd := docker.ReadHostDisk("/var/lib/milo"); hd.OK {
+	if hd := docker.ReadHostDisk("/var/lib/milo"); hd.OK && hd.Total > 0 {
+		used := hd.Total - hd.Free
 		data["DiskFree"] = map[string]any{
-			"Free":  humanBytes(hd.Free),
-			"Total": humanBytes(hd.Total),
-			"Used":  humanBytes(hd.Total - hd.Free),
+			"DiskPct": float64(used) / float64(hd.Total) * 100,
+			"DiskNum": humanBytes(used) + " / " + humanBytes(hd.Total) + "（剩 " + humanBytes(hd.Free) + "）",
 		}
 	}
 	s.render(w, "admin", data)

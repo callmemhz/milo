@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -188,10 +187,20 @@ func (s *Server) streamContainerStatsSSE(w http.ResponseWriter, r *http.Request,
 		if err := dec.Decode(&frame); err != nil {
 			return
 		}
-		st := docker.ParseStats(frame)
-		frag := fmt.Sprintf(
-			`<span class="metric">CPU <b>%.1f%%</b></span><span class="metric">内存 <b>%s</b></span>`,
-			st.CPUPercent, template.HTMLEscapeString(humanBytes(st.MemoryUsage)))
-		sseEvent(w, flusher, "stats", frag)
+		sseEvent(w, flusher, "stats", statsMeters(docker.ParseStats(frame)))
 	}
+}
+
+// statsMeters renders live CPU and memory as colored bars for SSE delivery.
+func statsMeters(st docker.Stats) string {
+	cpu := string(meterHTML("CPU", st.CPUPercent, fmt.Sprintf("%.1f%%", st.CPUPercent)))
+	var mem string
+	if st.MemoryLimit > 0 {
+		memPct := float64(st.MemoryUsage) / float64(st.MemoryLimit) * 100
+		mem = string(meterHTML("内存", memPct,
+			fmt.Sprintf("%s / %s", humanBytes(st.MemoryUsage), humanBytes(st.MemoryLimit))))
+	} else {
+		mem = string(meterHTML("内存", 0, humanBytes(st.MemoryUsage)))
+	}
+	return cpu + mem
 }

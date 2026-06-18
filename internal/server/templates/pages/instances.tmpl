@@ -33,7 +33,7 @@
         <td><span class="badge state-{{.Status}}">{{.Status}}</span></td>
         <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
-        <td>{{if .Exposed}}已开启{{else}}关闭{{end}}</td>
+        <td>{{if .Exposed}}<span class="yes ico">✓ 开启</span>{{else}}<span class="no ico">✕ 关闭</span>{{end}}</td>
       </tr>
     {{else}}
       <tr><td colspan="7" class="muted">无 add-on</td></tr>
