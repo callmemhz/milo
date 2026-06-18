@@ -37,12 +37,13 @@ func (s *Server) consoleLoginForm(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/console", http.StatusFound)
 		return
 	}
-	s.render(w, "login", map[string]any{"CSRF": s.ensureCSRF(w, r)})
+	s.render(w, r, "login", map[string]any{"CSRF": s.ensureCSRF(w, r)})
 }
 
 func (s *Server) consoleLoginSubmit(w http.ResponseWriter, r *http.Request) {
+	lang := langFromRequest(r)
 	if !s.checkCSRF(r) {
-		s.render(w, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": "会话已过期，请重试"})
+		s.render(w, r, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": translate(lang, "login.expired")})
 		return
 	}
 	username := r.FormValue("username")
@@ -50,7 +51,7 @@ func (s *Server) consoleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 
 	fail := func() {
 		w.WriteHeader(http.StatusUnauthorized)
-		s.render(w, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": "用户名或密码错误"})
+		s.render(w, r, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": translate(lang, "login.bad")})
 	}
 
 	u, err := s.Store.GetUserByUsername(r.Context(), username)
@@ -65,7 +66,7 @@ func (s *Server) consoleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 	if frozen, _ := s.Store.IsUserFrozen(r.Context(), u.ID); frozen {
 		w.WriteHeader(http.StatusForbidden)
-		s.render(w, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": "账号已被冻结，请联系管理员"})
+		s.render(w, r, "login", map[string]any{"CSRF": s.ensureCSRF(w, r), "Error": translate(lang, "login.frozen")})
 		return
 	}
 

@@ -1,10 +1,10 @@
-{{define "title"}}概览 · milo console{{end}}
+{{define "title"}}{{call .T "nav.overview"}} · milo console{{end}}
 {{define "content"}}
-<h1>我的实例</h1>
-{{if not .Apps}}<p class="muted">还没有 app。</p>{{else}}
+<h1>{{call .T "dash.my_instances"}}</h1>
+{{if not .Apps}}<p class="muted">{{call .T "dash.no_apps"}}</p>{{else}}
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>名称</th><th>状态</th><th>运行</th><th>内存</th></tr></thead>
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th></tr></thead>
     <tbody>
     {{range .Apps}}
       <tr>
@@ -19,12 +19,13 @@
 </section>
 {{end}}
 
-<h1>我的数据库 / Add-ons</h1>
-{{if not .Addons}}<p class="muted">还没有 add-on。</p>{{else}}
+<h1>{{call .T "dash.my_dbs"}}</h1>
+{{if not .Addons}}<p class="muted">{{call .T "dash.no_addons"}}</p>{{else}}
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>名称</th><th>引擎</th><th>状态</th><th>运行</th><th>内存</th><th>外部访问</th></tr></thead>
+    <thead><tr><th>{{call .T "col.name"}}</th><th>{{call .T "col.engine"}}</th><th>{{call .T "col.state"}}</th><th>{{call .T "col.uptime"}}</th><th>{{call .T "col.mem"}}</th><th>{{call .T "col.external"}}</th></tr></thead>
     <tbody>
+    {{$root := .}}
     {{range .Addons}}
       <tr>
         <td><a href="/console/addons/{{.Name}}" class="mono">{{.Name}}</a></td>
@@ -32,7 +33,7 @@
         <td><span class="badge state-{{.Status}}">{{.Status}}</span></td>
         <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
-        <td>{{if .Exposed}}<span class="yes ico">✓ 开启</span>{{else}}<span class="no ico">✕ 关闭</span>{{end}}</td>
+        <td>{{if .Exposed}}<span class="yes ico">{{call $root.T "common.on"}}</span>{{else}}<span class="no ico">{{call $root.T "common.off"}}</span>{{end}}</td>
       </tr>
     {{end}}
     </tbody>

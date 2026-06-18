@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -63,12 +64,13 @@ func (s *Server) consoleAddonDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	lang := langFromRequest(r)
 	volume := "—"
 	if s.Runtime != nil {
 		if sz, ok := s.Runtime.VolumeSize(ctx, deploy.AddonVolumeName(ad.Name)); ok {
 			volume = humanBytes(uint64(sz))
 		} else {
-			volume = "未使用"
+			volume = translate(lang, "f.unused")
 		}
 	}
 
@@ -86,7 +88,7 @@ func (s *Server) consoleAddonDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.render(w, "addon", map[string]any{
+	s.render(w, r, "addon", map[string]any{
 		"User":         id.User.Username,
 		"Admin":        id.User.IsAdmin,
 		"CSRF":         s.ensureCSRF(w, r),
@@ -96,7 +98,7 @@ func (s *Server) consoleAddonDetail(w http.ResponseWriter, r *http.Request) {
 		"State":        state,
 		"Uptime":       uptime,
 		"Mem":          mem,
-		"Spec":         fmt.Sprintf("%s 核 / %d MB", strconv.FormatFloat(ad.CpuLimit, 'g', -1, 64), ad.MemoryLimitMb),
+		"Spec":         fmt.Sprintf("%s %s / %d MB", strconv.FormatFloat(ad.CpuLimit, 'g', -1, 64), translate(lang, "unit.cores"), ad.MemoryLimitMb),
 		"Image":        image,
 		"Volume":       volume,
 		"Exposed":      ad.Exposed,
@@ -113,23 +115,24 @@ func (s *Server) consoleAddonExpose(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	lang := langFromRequest(r)
 	dest := "/console/addons/" + ad.Name
 	if !s.checkCSRF(r) {
-		http.Redirect(w, r, dest+"?err="+url.QueryEscape("会话过期，请重试"), http.StatusFound)
+		http.Redirect(w, r, dest+"?err="+url.QueryEscape(translate(lang, "login.expired")), http.StatusFound)
 		return
 	}
 	if s.Deployer == nil {
-		http.Redirect(w, r, dest+"?err="+url.QueryEscape("deployer 未配置"), http.StatusFound)
+		http.Redirect(w, r, dest+"?err="+url.QueryEscape(translate(lang, "m.no_deployer")), http.StatusFound)
 		return
 	}
 	want := r.FormValue("exposed") == "true"
 	if ad.Exposed != want {
 		if err := s.Store.SetAddonExposed(r.Context(), ad.ID, want); err != nil {
-			http.Redirect(w, r, dest+"?err="+url.QueryEscape("更新失败"), http.StatusFound)
+			http.Redirect(w, r, dest+"?err="+url.QueryEscape(translate(lang, "m.update_failed")), http.StatusFound)
 			return
 		}
 		if err := s.Deployer.ProvisionAddon(r.Context(), ad.ID); err != nil {
-			http.Redirect(w, r, dest+"?err="+url.QueryEscape("重建容器失败: "+err.Error()), http.StatusFound)
+			http.Redirect(w, r, dest+"?err="+url.QueryEscape(fmt.Sprintf(translate(lang, "m.rebuild_fail"), err.Error())), http.StatusFound)
 			return
 		}
 	}
@@ -169,13 +172,15 @@ func (s *Server) streamContainerStatsSSE(w http.ResponseWriter, r *http.Request,
 		return
 	}
 	sseHeaders(w)
+	lang := langFromRequest(r)
+	noStats := `<span class="muted">` + template.HTMLEscapeString(translate(lang, "sse.no_stats")) + `</span>`
 	if name == "" || s.Runtime == nil {
-		sseEvent(w, flusher, "stats", `<span class="muted">无负载数据</span>`)
+		sseEvent(w, flusher, "stats", noStats)
 		return
 	}
 	rc, err := s.Runtime.StatsStream(r.Context(), name)
 	if err != nil {
-		sseEvent(w, flusher, "stats", `<span class="muted">无负载数据</span>`)
+		sseEvent(w, flusher, "stats", noStats)
 		return
 	}
 	defer rc.Close()
@@ -187,20 +192,20 @@ func (s *Server) streamContainerStatsSSE(w http.ResponseWriter, r *http.Request,
 		if err := dec.Decode(&frame); err != nil {
 			return
 		}
-		sseEvent(w, flusher, "stats", statsMeters(docker.ParseStats(frame)))
+		sseEvent(w, flusher, "stats", statsMeters(docker.ParseStats(frame), lang))
 	}
 }
 
 // statsMeters renders live CPU and memory as colored bars for SSE delivery.
-func statsMeters(st docker.Stats) string {
-	cpu := string(meterHTML("CPU", st.CPUPercent, fmt.Sprintf("%.1f%%", st.CPUPercent)))
+func statsMeters(st docker.Stats, lang string) string {
+	cpu := string(meterHTML(translate(lang, "f.cpu"), st.CPUPercent, fmt.Sprintf("%.1f%%", st.CPUPercent)))
 	var mem string
 	if st.MemoryLimit > 0 {
 		memPct := float64(st.MemoryUsage) / float64(st.MemoryLimit) * 100
-		mem = string(meterHTML("内存", memPct,
+		mem = string(meterHTML(translate(lang, "f.mem"), memPct,
 			fmt.Sprintf("%s / %s", humanBytes(st.MemoryUsage), humanBytes(st.MemoryLimit))))
 	} else {
-		mem = string(meterHTML("内存", 0, humanBytes(st.MemoryUsage)))
+		mem = string(meterHTML(translate(lang, "f.mem"), 0, humanBytes(st.MemoryUsage)))
 	}
 	return cpu + mem
 }

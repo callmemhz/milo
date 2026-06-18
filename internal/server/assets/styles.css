@@ -15,6 +15,10 @@ a:hover{text-decoration:underline}
 .topbar nav{display:flex;align-items:center;gap:14px}
 .topbar nav a{color:var(--muted);font-size:13px}
 .topbar nav a:hover{color:var(--fg);text-decoration:none}
+.topbar.guest{justify-content:space-between}
+.langsel{display:inline-flex;gap:6px;margin:0 4px}
+.langsel a{color:var(--muted);font-size:12px}
+.langsel a.active{color:var(--fg);font-weight:600}
 .who{color:var(--muted)}
 main{max-width:960px;margin:0 auto;padding:24px 20px}
 h1{font-size:18px;margin:24px 0 12px}

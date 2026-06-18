@@ -35,11 +35,12 @@ func (s *Server) consoleVolumes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id, _ := auth.IdentityFromContext(ctx)
 
+	lang := langFromRequest(r)
 	var rows []volRow
 	if s.Runtime != nil {
 		vols, _ := s.Runtime.VolumeList(ctx)
 		for _, v := range vols {
-			row := volRow{Name: v.Name, Kind: "其他", InUse: v.RefCount > 0}
+			row := volRow{Name: v.Name, Kind: translate(lang, "vol.kind_other"), InUse: v.RefCount > 0}
 			if v.Size >= 0 {
 				row.Size = humanBytes(uint64(v.Size))
 			} else {
@@ -59,15 +60,15 @@ func (s *Server) consoleVolumes(w http.ResponseWriter, r *http.Request) {
 			rows = append(rows, row)
 		}
 		sort.Slice(rows, func(i, j int) bool {
-			// milo volumes first, then by name.
-			mi, mj := rows[i].Kind != "其他", rows[j].Kind != "其他"
+			// milo volumes (those with a parsed owning instance) first, then by name.
+			mi, mj := rows[i].Instance != "", rows[j].Instance != ""
 			if mi != mj {
 				return mi
 			}
 			return rows[i].Name < rows[j].Name
 		})
 	}
-	s.render(w, "volumes", map[string]any{
+	s.render(w, r, "volumes", map[string]any{
 		"User":    id.User.Username,
 		"Admin":   true,
 		"CSRF":    s.ensureCSRF(w, r),
@@ -78,21 +79,22 @@ func (s *Server) consoleVolumes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) consoleVolumeDelete(w http.ResponseWriter, r *http.Request) {
+	lang := langFromRequest(r)
 	flash := func(key, msg string) {
 		http.Redirect(w, r, "/console/admin/volumes?"+key+"="+url.QueryEscape(msg), http.StatusFound)
 	}
 	if !s.checkCSRF(r) {
-		flash("err", "会话过期，请重试")
+		flash("err", translate(lang, "login.expired"))
 		return
 	}
 	if err := r.ParseForm(); err != nil {
-		flash("err", "表单解析失败")
+		flash("err", translate(lang, "m.form_parse"))
 		return
 	}
 	names := r.Form["names"]
 	force := r.FormValue("force") == "on"
 	if s.Runtime == nil || len(names) == 0 {
-		flash("err", "未选择任何卷")
+		flash("err", translate(lang, "m.no_vol_sel"))
 		return
 	}
 	ok, failed := 0, 0
@@ -106,9 +108,9 @@ func (s *Server) consoleVolumeDelete(w http.ResponseWriter, r *http.Request) {
 			ok++
 		}
 	}
-	msg := fmt.Sprintf("已删除 %d 个卷", ok)
+	msg := fmt.Sprintf(translate(lang, "m.vol_deleted"), ok)
 	if failed > 0 {
-		msg += fmt.Sprintf("，%d 个失败（使用中的卷需先删实例，或勾选强制）", failed)
+		msg += fmt.Sprintf(translate(lang, "m.vol_failed"), failed)
 	}
 	flash("msg", msg)
 }

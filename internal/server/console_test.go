@@ -94,7 +94,7 @@ func TestConsoleLoginAndDashboard(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("dashboard status = %d", resp.StatusCode)
 	}
-	if !strings.Contains(body, "我的实例") || !strings.Contains(body, "alice") {
+	if !strings.Contains(body, "My instances") || !strings.Contains(body, "alice") {
 		t.Fatalf("dashboard body missing expected content:\n%s", body)
 	}
 }
@@ -115,7 +115,7 @@ func TestConsoleLoginWrongPassword(t *testing.T) {
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", resp.StatusCode)
 	}
-	if !strings.Contains(readBody(t, resp), "用户名或密码错误") {
+	if !strings.Contains(readBody(t, resp), "Wrong username or password") {
 		t.Fatal("missing error message")
 	}
 }
@@ -159,7 +159,7 @@ func TestConsoleAdminPages(t *testing.T) {
 
 	// Users page lists the admin.
 	resp, _ := c.Get(h.URL + "/console/users")
-	if body := readBody(t, resp); !strings.Contains(body, "用户管理") || !strings.Contains(body, "boss") {
+	if body := readBody(t, resp); !strings.Contains(body, "User management") || !strings.Contains(body, "boss") {
 		t.Fatalf("users page missing content:\n%s", body)
 	}
 
@@ -180,13 +180,13 @@ func TestConsoleAdminPages(t *testing.T) {
 	resp, _ = c2.PostForm(h.URL+"/console/login", url.Values{
 		"username": {"carol"}, "password": {"carolpass1"}, "_csrf": {csrf2},
 	})
-	if !strings.Contains(readBody(t, resp), "我的实例") {
+	if !strings.Contains(readBody(t, resp), "My instances") {
 		t.Fatal("created user could not log in")
 	}
 
 	// Admin overview renders.
 	resp, _ = c.Get(h.URL + "/console/admin")
-	if !strings.Contains(readBody(t, resp), "宿主机状态") {
+	if !strings.Contains(readBody(t, resp), "Host status") {
 		t.Fatal("admin page missing")
 	}
 }
@@ -255,8 +255,8 @@ func TestConsoleFrozenUserBlocked(t *testing.T) {
 	if resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("frozen login status = %d, want 403", resp.StatusCode)
 	}
-	if !strings.Contains(readBody(t, resp), "冻结") {
-		t.Fatal("expected frozen message")
+	if b := readBody(t, resp); !strings.Contains(b, "frozen") {
+		t.Fatalf("expected frozen message, got:\n%s", b)
 	}
 
 	// Unfreeze -> can log in again.
@@ -266,7 +266,7 @@ func TestConsoleFrozenUserBlocked(t *testing.T) {
 	c2 := newClient(t)
 	loginAs(t, c2, h.URL, "eve", "supersecret")
 	resp, _ = c2.Get(h.URL + "/console")
-	if !strings.Contains(readBody(t, resp), "我的实例") {
+	if !strings.Contains(readBody(t, resp), "My instances") {
 		t.Fatal("unfrozen user should log in")
 	}
 }
@@ -291,7 +291,7 @@ func TestConsoleLogout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(readBody(t, resp), "登录") {
+	if !strings.Contains(readBody(t, resp), "Sign in") {
 		t.Fatal("expected to land on login page after logout")
 	}
 }

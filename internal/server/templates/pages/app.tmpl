@@ -1,34 +1,35 @@
 {{define "title"}}{{.Name}} · milo console{{end}}
 {{define "content"}}
-<p class="crumb"><a href="/console">← 概览</a></p>
+{{$root := .}}
+<p class="crumb"><a href="/console">{{call .T "common.back_overview"}}</a></p>
 <div class="app-head">
   <h1>{{.Name}}</h1>
   <span class="badge state-{{.State}}">{{.State}}</span>
 </div>
 
 <section class="card">
-  <h2>概况</h2>
+  <h2>{{call .T "sec.overview"}}</h2>
   <dl class="specs">
-    <div class="cell"><dt>状态</dt><dd>{{.State}}</dd></div>
-    <div class="cell"><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
-    <div class="cell"><dt>规格</dt><dd>{{.Spec}}</dd></div>
-    <div class="cell"><dt>端口</dt><dd>{{.Port}}</dd></div>
-    <div class="cell"><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
-    {{if .Ref}}<div class="cell"><dt>Ref</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
-    <div class="cell"><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
-    <div class="cell"><dt>是否暴露</dt><dd><span class="tag use">是 · HTTP</span></dd></div>
-    {{if .Address}}<div class="cell"><dt>访问地址</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
+    <div class="cell"><dt>{{call .T "f.state"}}</dt><dd>{{.State}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.uptime"}}</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.spec"}}</dt><dd>{{.Spec}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.port"}}</dt><dd>{{.Port}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.image"}}</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
+    {{if .Ref}}<div class="cell"><dt>{{call .T "f.ref"}}</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
+    <div class="cell"><dt>{{call .T "f.volume_usage"}}</dt><dd>{{.Volume}}</dd></div>
+    <div class="cell"><dt>{{call .T "f.exposed"}}</dt><dd><span class="tag use">{{call .T "app.exposed_http"}}</span></dd></div>
+    {{if .Address}}<div class="cell"><dt>{{call .T "f.address"}}</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
   </dl>
   <div class="live" hx-ext="sse" sse-connect="/console/apps/{{.Name}}/stats/stream">
-    <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">连接负载流…</span></div>
+    <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">—</span></div>
   </div>
 </section>
 
 <section class="card">
-  <h2>关联的 Add-ons（link）</h2>
+  <h2>{{call .T "sec.linked_addons"}}</h2>
   {{if .Links}}
   <table class="tbl">
-    <thead><tr><th>Add-on</th><th>引擎</th><th>注入别名</th></tr></thead>
+    <thead><tr><th>{{call .T "col.addon"}}</th><th>{{call .T "col.engine"}}</th><th>{{call .T "col.alias"}}</th></tr></thead>
     <tbody>
     {{range .Links}}
       <tr>
@@ -39,11 +40,11 @@
     {{end}}
     </tbody>
   </table>
-  {{else}}<p class="muted">没有 link 任何 add-on。</p>{{end}}
+  {{else}}<p class="muted">{{call .T "app.no_links"}}</p>{{end}}
 </section>
 
 <section class="card">
-  <h2>实时日志</h2>
+  <h2>{{call .T "sec.live_logs"}}</h2>
   <div hx-ext="sse" sse-connect="/console/apps/{{.Name}}/logs/stream">
     <pre class="logs" sse-swap="message" hx-swap="beforeend"></pre>
   </div>
