@@ -1,10 +1,13 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/callmemhz/milo/internal/auth"
+	"github.com/callmemhz/milo/internal/docker"
 )
 
 // usersFlash redirects back to the users page with an encoded message/error.
@@ -43,8 +46,86 @@ func (s *Server) consoleAdmin(w http.ResponseWriter, r *http.Request) {
 				"Images":            hi.Images,
 			}
 		}
+		if du, err := s.Runtime.DiskUsage(ctx); err == nil {
+			data["Disk"] = map[string]any{
+				"Images":     humanBytes(uint64(du.ImagesSize)),
+				"Containers": humanBytes(uint64(du.ContainersSize)),
+				"Volumes":    humanBytes(uint64(du.VolumesSize)),
+				"BuildCache": humanBytes(uint64(du.BuildCacheSize)),
+				"Total":      humanBytes(uint64(du.ImagesSize + du.ContainersSize + du.VolumesSize + du.BuildCacheSize)),
+			}
+		}
+	}
+	// Host load (read from /proc; reflects the docker host/VM).
+	if hl := docker.ReadHostLoad(); hl.OK {
+		used := hl.MemTotal - hl.MemAvail
+		data["Load"] = map[string]any{
+			"L1":       fmt.Sprintf("%.2f", hl.Load1),
+			"L5":       fmt.Sprintf("%.2f", hl.Load5),
+			"L15":      fmt.Sprintf("%.2f", hl.Load15),
+			"MemUsed":  humanBytes(used),
+			"MemTotal": humanBytes(hl.MemTotal),
+		}
 	}
 	s.render(w, "admin", data)
+}
+
+// consoleImages lists local docker images for admin management.
+func (s *Server) consoleImages(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id, _ := auth.IdentityFromContext(ctx)
+
+	type imgRow struct {
+		ID    string
+		Short string
+		Tags  string
+		Size  string
+	}
+	var rows []imgRow
+	if s.Runtime != nil {
+		if imgs, err := s.Runtime.ImageList(ctx); err == nil {
+			for _, im := range imgs {
+				tags := "<none>"
+				if len(im.RepoTags) > 0 {
+					tags = strings.Join(im.RepoTags, ", ")
+				}
+				short := im.ID
+				if strings.HasPrefix(short, "sha256:") {
+					short = short[7:]
+				}
+				if len(short) > 12 {
+					short = short[:12]
+				}
+				rows = append(rows, imgRow{ID: im.ID, Short: short, Tags: tags, Size: humanBytes(uint64(im.Size))})
+			}
+		}
+	}
+	s.render(w, "images", map[string]any{
+		"User":   id.User.Username,
+		"Admin":  true,
+		"CSRF":   s.ensureCSRF(w, r),
+		"Images": rows,
+		"Flash":  r.URL.Query().Get("msg"),
+		"Error":  r.URL.Query().Get("err"),
+	})
+}
+
+func (s *Server) consoleImageDelete(w http.ResponseWriter, r *http.Request) {
+	if !s.checkCSRF(r) {
+		http.Redirect(w, r, "/console/admin/images?err="+url.QueryEscape("会话过期，请重试"), http.StatusFound)
+		return
+	}
+	idArg := r.FormValue("id")
+	force := r.FormValue("force") == "on"
+	if s.Runtime == nil || idArg == "" {
+		http.Redirect(w, r, "/console/admin/images", http.StatusFound)
+		return
+	}
+	if err := s.Runtime.ImageRemove(r.Context(), idArg, force); err != nil {
+		http.Redirect(w, r, "/console/admin/images?err="+url.QueryEscape("删除失败（可能被容器占用，可勾选强制）"), http.StatusFound)
+		return
+	}
+	http.Redirect(w, r, "/console/admin/images?msg="+url.QueryEscape("已删除镜像"), http.StatusFound)
 }
 
 type userRow struct {

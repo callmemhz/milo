@@ -1,0 +1,48 @@
+{{define "title"}}{{.Name}} · milo console{{end}}
+{{define "content"}}
+<p class="crumb"><a href="/console">← 概览</a></p>
+<div class="app-head">
+  <h1>{{.Name}}</h1>
+  <span class="badge state-{{.State}}">{{.State}}</span>
+</div>
+
+<section class="card">
+  <h2>概况</h2>
+  <dl class="kv wide">
+    <div><dt>引擎</dt><dd>{{.Engine}} {{.Version}}</dd></div>
+    <div><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
+    <div><dt>内存</dt><dd>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</dd></div>
+    <div><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
+    <div><dt>外部访问</dt><dd>{{if .Exposed}}已开启{{else}}关闭{{end}}</dd></div>
+    {{if .ExternalHost}}<div><dt>外部地址</dt><dd class="mono">{{.ExternalHost}}</dd></div>{{end}}
+  </dl>
+  {{if .ExternalURL}}
+  <details class="reveal">
+    <summary>连接串（含密码）</summary>
+    <code class="conn">{{.ExternalURL}}</code>
+  </details>
+  {{end}}
+  <div class="live" hx-ext="sse" sse-connect="/console/addons/{{.Name}}/stats/stream">
+    <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">连接负载流…</span></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>关联的实例（link）</h2>
+  {{if .Links}}
+  <table class="tbl">
+    <thead><tr><th>App</th><th>注入别名</th></tr></thead>
+    <tbody>
+    {{range .Links}}<tr><td class="mono">{{.App}}</td><td class="mono">{{.Alias}}</td></tr>{{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="muted">没有 app link 到这个 add-on。</p>{{end}}
+</section>
+
+<section class="card">
+  <h2>实时日志</h2>
+  <div hx-ext="sse" sse-connect="/console/addons/{{.Name}}/logs/stream">
+    <pre class="logs" sse-swap="message" hx-swap="beforeend"></pre>
+  </div>
+</section>
+{{end}}

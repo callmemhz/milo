@@ -3,6 +3,7 @@
 <h1>宿主机状态</h1>
 {{with .Host}}
 <section class="card">
+  <h2>主机</h2>
   <dl class="kv wide">
     <div><dt>Docker 版本</dt><dd>{{.ServerVersion}}</dd></div>
     <div><dt>系统</dt><dd>{{.OS}} / {{.Arch}}</dd></div>
@@ -16,6 +17,32 @@
 <p class="muted">无法读取 docker 宿主机信息。</p>
 {{end}}
 
+{{with .Load}}
+<section class="card">
+  <h2>负载</h2>
+  <dl class="kv wide">
+    <div><dt>Load (1m)</dt><dd>{{.L1}}</dd></div>
+    <div><dt>Load (5m)</dt><dd>{{.L5}}</dd></div>
+    <div><dt>Load (15m)</dt><dd>{{.L15}}</dd></div>
+    <div><dt>内存使用</dt><dd>{{.MemUsed}} / {{.MemTotal}}</dd></div>
+  </dl>
+</section>
+{{end}}
+
+{{with .Disk}}
+<section class="card">
+  <h2>磁盘（docker 占用）</h2>
+  <dl class="kv wide">
+    <div><dt>镜像</dt><dd>{{.Images}}</dd></div>
+    <div><dt>容器</dt><dd>{{.Containers}}</dd></div>
+    <div><dt>卷</dt><dd>{{.Volumes}}</dd></div>
+    <div><dt>构建缓存</dt><dd>{{.BuildCache}}</dd></div>
+    <div><dt>合计</dt><dd>{{.Total}}</dd></div>
+  </dl>
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/images">→ 本地镜像管理</a></p>
+</section>
+{{end}}
+
 <h1>milo 资源</h1>
 <section class="card">
   <dl class="kv wide">
@@ -24,6 +51,6 @@
     <div><dt>用户</dt><dd>{{.UserCount}}</dd></div>
     <div><dt>控制面版本</dt><dd>{{.Version}}</dd></div>
   </dl>
-  <p class="muted" style="margin-top:12px">全部实例与 add-on（含归属）见 <a href="/console">概览</a>。</p>
+  <p class="muted" style="margin-top:12px"><a href="/console/admin/instances">→ 查看全部实例</a></p>
 </section>
 {{end}}

@@ -1,42 +1,44 @@
-{{define "title"}}概览 · milo console{{end}}
+{{define "title"}}全部实例 · milo console{{end}}
 {{define "content"}}
-<h1>我的实例</h1>
-{{if not .Apps}}<p class="muted">还没有 app。</p>{{else}}
+<h1>全部实例（管理员）</h1>
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>名称</th><th>状态</th><th>运行</th><th>内存</th></tr></thead>
+    <thead><tr><th>App</th><th>归属</th><th>状态</th><th>运行</th><th>内存</th></tr></thead>
     <tbody>
     {{range .Apps}}
       <tr>
         <td><a href="/console/apps/{{.Name}}" class="mono">{{.Name}}</a></td>
+        <td>{{.Owners}}</td>
         <td><span class="badge state-{{.State}}">{{.State}}</span></td>
         <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
       </tr>
+    {{else}}
+      <tr><td colspan="5" class="muted">无 app</td></tr>
     {{end}}
     </tbody>
   </table>
 </section>
-{{end}}
 
-<h1>我的数据库 / Add-ons</h1>
-{{if not .Addons}}<p class="muted">还没有 add-on。</p>{{else}}
+<h1>全部 Add-ons</h1>
 <section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>名称</th><th>引擎</th><th>状态</th><th>运行</th><th>内存</th><th>外部访问</th></tr></thead>
+    <thead><tr><th>名称</th><th>归属</th><th>引擎</th><th>状态</th><th>运行</th><th>内存</th><th>外部访问</th></tr></thead>
     <tbody>
     {{range .Addons}}
       <tr>
         <td><a href="/console/addons/{{.Name}}" class="mono">{{.Name}}</a></td>
+        <td>{{.Owners}}</td>
         <td>{{.Engine}}</td>
         <td><span class="badge state-{{.Status}}">{{.Status}}</span></td>
         <td>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</td>
         <td>{{if .Mem}}{{.Mem}}{{else}}—{{end}}</td>
         <td>{{if .Exposed}}已开启{{else}}关闭{{end}}</td>
       </tr>
+    {{else}}
+      <tr><td colspan="7" class="muted">无 add-on</td></tr>
     {{end}}
     </tbody>
   </table>
 </section>
-{{end}}
 {{end}}

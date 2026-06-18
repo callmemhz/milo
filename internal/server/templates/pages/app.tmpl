@@ -11,14 +11,33 @@
   <dl class="kv wide">
     <div><dt>运行时长</dt><dd>{{if .Uptime}}{{.Uptime}}{{else}}—{{end}}</dd></div>
     <div><dt>端口</dt><dd>{{.Port}}</dd></div>
+    <div><dt>是否暴露</dt><dd>是（HTTP）</dd></div>
+    {{if .Address}}<div><dt>访问地址</dt><dd><a class="mono" href="{{.Address}}" target="_blank" rel="noopener">{{.Address}}</a></dd></div>{{end}}
+    <div><dt>Volume 使用</dt><dd>{{.Volume}}</dd></div>
     <div><dt>镜像</dt><dd class="mono">{{if .Image}}{{.Image}}{{else}}—{{end}}</dd></div>
     {{if .Ref}}<div><dt>Ref</dt><dd class="mono">{{.Ref}}</dd></div>{{end}}
   </dl>
   <div class="live" hx-ext="sse" sse-connect="/console/apps/{{.Name}}/stats/stream">
-    <div class="metrics" sse-swap="stats" hx-swap="innerHTML">
-      <span class="muted">连接负载流…</span>
-    </div>
+    <div class="metrics" sse-swap="stats" hx-swap="innerHTML"><span class="muted">连接负载流…</span></div>
   </div>
+</section>
+
+<section class="card">
+  <h2>关联的 Add-ons（link）</h2>
+  {{if .Links}}
+  <table class="tbl">
+    <thead><tr><th>Add-on</th><th>引擎</th><th>注入别名</th></tr></thead>
+    <tbody>
+    {{range .Links}}
+      <tr>
+        <td><a href="/console/addons/{{.Addon}}" class="mono">{{.Addon}}</a></td>
+        <td>{{.Engine}}</td>
+        <td class="mono">{{.Alias}}</td>
+      </tr>
+    {{end}}
+    </tbody>
+  </table>
+  {{else}}<p class="muted">没有 link 任何 add-on。</p>{{end}}
 </section>
 
 <section class="card">

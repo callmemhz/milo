@@ -73,3 +73,11 @@ button.danger{color:var(--bad)!important}
 .chk{color:var(--muted);display:flex;align-items:center;gap:6px}
 .flash{color:var(--ok);background:rgba(52,211,153,.1);padding:8px 12px;margin:0 0 14px}
 .error.left{text-align:left}
+.card.pad0{padding:0}
+.card.pad0 .tbl th:first-child,.card.pad0 .tbl td:first-child{padding-left:16px}
+.card.pad0 .tbl th:last-child,.card.pad0 .tbl td:last-child{padding-right:16px}
+.chk.small{font-size:11px}
+.reveal{margin-top:12px}
+.reveal summary{cursor:pointer;color:var(--muted);font-size:13px}
+.conn{display:block;margin-top:8px;padding:10px;background:#0a0c10;border:1px solid var(--line);
+  font-family:var(--mono);font-size:12px;color:#cfd4dd;word-break:break-all}

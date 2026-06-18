@@ -26,6 +26,10 @@ type ContainerRuntime interface {
 	SampleStats(ctx context.Context, name string) (docker.Stats, error)
 	StatsStream(ctx context.Context, name string) (io.ReadCloser, error)
 	Info(ctx context.Context) (docker.HostInfo, error)
+	DiskUsage(ctx context.Context) (docker.DiskUsage, error)
+	VolumeSize(ctx context.Context, name string) (int64, bool)
+	ImageList(ctx context.Context) ([]docker.Image, error)
+	ImageRemove(ctx context.Context, id string, force bool) error
 }
 
 const (
@@ -78,12 +82,18 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/apps/{app}", s.consoleAppDetail)
 		r.Get("/console/apps/{app}/logs/stream", s.consoleAppLogsStream)
 		r.Get("/console/apps/{app}/stats/stream", s.consoleAppStatsStream)
+		r.Get("/console/addons/{addon}", s.consoleAddonDetail)
+		r.Get("/console/addons/{addon}/logs/stream", s.consoleAddonLogsStream)
+		r.Get("/console/addons/{addon}/stats/stream", s.consoleAddonStatsStream)
 	})
 
 	// Admin-only pages.
 	r.Group(func(r chi.Router) {
 		r.Use(s.requireSession, s.requireAdminPage)
 		r.Get("/console/admin", s.consoleAdmin)
+		r.Get("/console/admin/instances", s.consoleAllInstances)
+		r.Get("/console/admin/images", s.consoleImages)
+		r.Post("/console/admin/images/delete", s.consoleImageDelete)
 		r.Get("/console/users", s.consoleUsers)
 		r.Post("/console/users/create", s.consoleUserCreate)
 		r.Post("/console/users/password", s.consoleUserSetPassword)

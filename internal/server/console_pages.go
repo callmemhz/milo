@@ -2,46 +2,37 @@ package server
 
 import (
 	"bufio"
-	"encoding/json"
+	"context"
 	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/go-chi/chi/v5"
 
 	"github.com/callmemhz/milo/internal/auth"
-	"github.com/callmemhz/milo/internal/docker"
 	"github.com/callmemhz/milo/internal/store"
 )
 
-func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
-	id, _ := auth.IdentityFromContext(r.Context())
-	ctx := r.Context()
-
-	var apps []store.App
-	var addons []store.Addon
-	if id.User.IsAdmin {
-		apps, _ = s.Store.ListApps(ctx)
-		addons, _ = s.Store.ListAddons(ctx)
-	} else {
-		apps, _ = s.Store.ListAppsByOwner(ctx, id.User.ID)
-		addons, _ = s.Store.ListAddonsByOwner(ctx, id.User.ID)
-	}
-
-	appCards := make([]appCard, 0, len(apps))
+// buildAppCards builds table rows for the given apps; withOwners fills the owner
+// column (admin views only).
+func (s *Server) buildAppCards(ctx context.Context, apps []store.App, withOwners bool) []appCard {
+	out := make([]appCard, 0, len(apps))
 	for _, a := range apps {
 		state, uptime, mem := s.inspectCard(ctx, s.currentContainer(ctx, a))
 		c := appCard{Name: a.Name, State: state, Uptime: uptime, Mem: mem}
-		if id.User.IsAdmin {
+		if withOwners {
 			owners, _ := s.Store.ListOwners(ctx, a.ID)
 			c.Owners = ownerNames(owners)
 		}
-		appCards = append(appCards, c)
+		out = append(out, c)
 	}
-	addonCards := make([]addonCard, 0, len(addons))
+	return out
+}
+
+func (s *Server) buildAddonCards(ctx context.Context, addons []store.Addon, withOwners bool) []addonCard {
+	out := make([]addonCard, 0, len(addons))
 	for _, ad := range addons {
 		name := ""
 		if ad.ContainerName != nil {
@@ -55,19 +46,46 @@ func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
 			Name: ad.Name, Engine: ad.Engine, Status: state,
 			Uptime: uptime, Mem: mem, Exposed: ad.Exposed,
 		}
-		if id.User.IsAdmin {
+		if withOwners {
 			owners, _ := s.Store.ListAddonOwners(ctx, ad.ID)
 			c.Owners = ownerNames(owners)
 		}
-		addonCards = append(addonCards, c)
+		out = append(out, c)
 	}
+	return out
+}
+
+// consoleDashboard shows the signed-in user's OWN apps and addons (admins see
+// their personal resources here; the org-wide view is /console/admin/instances).
+func (s *Server) consoleDashboard(w http.ResponseWriter, r *http.Request) {
+	id, _ := auth.IdentityFromContext(r.Context())
+	ctx := r.Context()
+
+	apps, _ := s.Store.ListAppsByOwner(ctx, id.User.ID)
+	addons, _ := s.Store.ListAddonsByOwner(ctx, id.User.ID)
 
 	s.render(w, "dashboard", map[string]any{
 		"User":   id.User.Username,
 		"Admin":  id.User.IsAdmin,
 		"CSRF":   s.ensureCSRF(w, r),
-		"Apps":   appCards,
-		"Addons": addonCards,
+		"Apps":   s.buildAppCards(ctx, apps, false),
+		"Addons": s.buildAddonCards(ctx, addons, false),
+	})
+}
+
+// consoleAllInstances is the admin org-wide view of every app and addon.
+func (s *Server) consoleAllInstances(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id, _ := auth.IdentityFromContext(ctx)
+	apps, _ := s.Store.ListApps(ctx)
+	addons, _ := s.Store.ListAddons(ctx)
+
+	s.render(w, "instances", map[string]any{
+		"User":   id.User.Username,
+		"Admin":  true,
+		"CSRF":   s.ensureCSRF(w, r),
+		"Apps":   s.buildAppCards(ctx, apps, true),
+		"Addons": s.buildAddonCards(ctx, addons, true),
 	})
 }
 
@@ -90,16 +108,45 @@ func (s *Server) consoleAppDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Public address: apps are always fronted by Caddy at <name>.<root_domain>.
+	address := ""
+	if s.RootDomain != "" {
+		address = "https://" + a.Name + "." + s.RootDomain
+	}
+
+	// Data volume usage.
+	volName := fmt.Sprintf("milo-app-%s-data", a.Name)
+	volume := "—"
+	if s.Runtime != nil {
+		if sz, ok := s.Runtime.VolumeSize(ctx, volName); ok {
+			volume = humanBytes(uint64(sz))
+		} else {
+			volume = "未使用"
+		}
+	}
+
+	// Linked add-ons.
+	type linkRow struct{ Alias, Addon, Engine string }
+	var links []linkRow
+	if ls, err := s.Store.ListLinksForApp(ctx, a.ID); err == nil {
+		for _, l := range ls {
+			links = append(links, linkRow{Alias: l.Alias, Addon: l.AddonName, Engine: l.Engine})
+		}
+	}
+
 	s.render(w, "app", map[string]any{
-		"User":   id.User.Username,
-		"Admin":  id.User.IsAdmin,
-		"CSRF":   s.ensureCSRF(w, r),
-		"Name":   a.Name,
-		"State":  state,
-		"Uptime": uptime,
-		"Port":   a.Port,
-		"Image":  image,
-		"Ref":    ref,
+		"User":    id.User.Username,
+		"Admin":   id.User.IsAdmin,
+		"CSRF":    s.ensureCSRF(w, r),
+		"Name":    a.Name,
+		"State":   state,
+		"Uptime":  uptime,
+		"Port":    a.Port,
+		"Image":   image,
+		"Ref":     ref,
+		"Address": address,
+		"Volume":  volume,
+		"Links":   links,
 	})
 }
 
@@ -120,14 +167,25 @@ func (s *Server) consoleLoadOwnedApp(w http.ResponseWriter, r *http.Request) (st
 	return a, true
 }
 
-// consoleAppLogsStream streams the app's container logs as Server-Sent Events.
-// Each demultiplexed log line becomes one `message` event.
 func (s *Server) consoleAppLogsStream(w http.ResponseWriter, r *http.Request) {
 	a, ok := s.consoleLoadOwnedApp(w, r)
 	if !ok {
 		return
 	}
-	name := s.currentContainer(r.Context(), a)
+	s.streamContainerLogsSSE(w, r, s.currentContainer(r.Context(), a))
+}
+
+func (s *Server) consoleAppStatsStream(w http.ResponseWriter, r *http.Request) {
+	a, ok := s.consoleLoadOwnedApp(w, r)
+	if !ok {
+		return
+	}
+	s.streamContainerStatsSSE(w, r, s.currentContainer(r.Context(), a))
+}
+
+// streamContainerLogsSSE streams a container's logs as SSE `message` events,
+// one per demultiplexed log line. Shared by app and addon log views.
+func (s *Server) streamContainerLogsSSE(w http.ResponseWriter, r *http.Request, name string) {
 	flusher, sseOK := w.(http.Flusher)
 	if !sseOK {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -138,7 +196,6 @@ func (s *Server) consoleAppLogsStream(w http.ResponseWriter, r *http.Request) {
 		sseEvent(w, flusher, "message", "（暂无运行中的容器）")
 		return
 	}
-
 	rc, err := s.Docker.Logs(r.Context(), name, true, "200")
 	if err != nil {
 		sseEvent(w, flusher, "message", "无法读取日志: "+err.Error())
@@ -155,47 +212,6 @@ func (s *Server) consoleAppLogsStream(w http.ResponseWriter, r *http.Request) {
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
 		sseEvent(w, flusher, "message", sc.Text())
-	}
-}
-
-// consoleAppStatsStream streams live CPU/memory as SSE `stats` events carrying a
-// small HTML fragment that htmx swaps into the overview.
-func (s *Server) consoleAppStatsStream(w http.ResponseWriter, r *http.Request) {
-	a, ok := s.consoleLoadOwnedApp(w, r)
-	if !ok {
-		return
-	}
-	name := s.currentContainer(r.Context(), a)
-	flusher, sseOK := w.(http.Flusher)
-	if !sseOK {
-		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-	sseHeaders(w)
-	if name == "" || s.Runtime == nil {
-		sseEvent(w, flusher, "stats", `<span class="muted">无负载数据</span>`)
-		return
-	}
-
-	rc, err := s.Runtime.StatsStream(r.Context(), name)
-	if err != nil {
-		sseEvent(w, flusher, "stats", `<span class="muted">无负载数据</span>`)
-		return
-	}
-	defer rc.Close()
-	go func() { <-r.Context().Done(); rc.Close() }()
-
-	dec := json.NewDecoder(rc)
-	for {
-		var frame container.StatsResponse
-		if err := dec.Decode(&frame); err != nil {
-			return
-		}
-		st := docker.ParseStats(frame)
-		frag := fmt.Sprintf(
-			`<span class="metric">CPU <b>%.1f%%</b></span><span class="metric">内存 <b>%s</b></span>`,
-			st.CPUPercent, template.HTMLEscapeString(humanBytes(st.MemoryUsage)))
-		sseEvent(w, flusher, "stats", frag)
 	}
 }
 
