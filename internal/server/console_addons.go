@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/go-chi/chi/v5"
@@ -55,6 +57,13 @@ func (s *Server) consoleAddonDetail(w http.ResponseWriter, r *http.Request) {
 		state = ad.Status
 	}
 
+	image := ""
+	if cname != "" && s.Runtime != nil {
+		if info, err := s.Runtime.InspectByName(ctx, cname); err == nil {
+			image = info.Image
+		}
+	}
+
 	volume := "—"
 	if s.Runtime != nil {
 		if sz, ok := s.Runtime.VolumeSize(ctx, deploy.AddonVolumeName(ad.Name)); ok {
@@ -88,12 +97,44 @@ func (s *Server) consoleAddonDetail(w http.ResponseWriter, r *http.Request) {
 		"State":        state,
 		"Uptime":       uptime,
 		"Mem":          mem,
+		"Spec":         fmt.Sprintf("%s 核 / %d MB", strconv.FormatFloat(ad.CpuLimit, 'g', -1, 64), ad.MemoryLimitMb),
+		"Image":        image,
 		"Volume":       volume,
 		"Exposed":      ad.Exposed,
 		"ExternalHost": externalHost,
 		"ExternalURL":  externalURL,
 		"Links":        links,
 	})
+}
+
+// consoleAddonExpose toggles an addon's external access (expose/unexpose),
+// reusing the same path as the API: flip the flag then re-provision.
+func (s *Server) consoleAddonExpose(w http.ResponseWriter, r *http.Request) {
+	ad, ok := s.consoleLoadOwnedAddon(w, r)
+	if !ok {
+		return
+	}
+	dest := "/console/addons/" + ad.Name
+	if !s.checkCSRF(r) {
+		http.Redirect(w, r, dest+"?err="+url.QueryEscape("会话过期，请重试"), http.StatusFound)
+		return
+	}
+	if s.Deployer == nil {
+		http.Redirect(w, r, dest+"?err="+url.QueryEscape("deployer 未配置"), http.StatusFound)
+		return
+	}
+	want := r.FormValue("exposed") == "true"
+	if ad.Exposed != want {
+		if err := s.Store.SetAddonExposed(r.Context(), ad.ID, want); err != nil {
+			http.Redirect(w, r, dest+"?err="+url.QueryEscape("更新失败"), http.StatusFound)
+			return
+		}
+		if err := s.Deployer.ProvisionAddon(r.Context(), ad.ID); err != nil {
+			http.Redirect(w, r, dest+"?err="+url.QueryEscape("重建容器失败: "+err.Error()), http.StatusFound)
+			return
+		}
+	}
+	http.Redirect(w, r, dest, http.StatusFound)
 }
 
 func (s *Server) consoleAddonLogsStream(w http.ResponseWriter, r *http.Request) {

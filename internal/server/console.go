@@ -30,6 +30,7 @@ type ContainerRuntime interface {
 	VolumeSize(ctx context.Context, name string) (int64, bool)
 	ImageList(ctx context.Context) ([]docker.Image, error)
 	ImageRemove(ctx context.Context, id string, force bool) error
+	ImageUsage(ctx context.Context) (map[string][]string, error)
 }
 
 const (
@@ -85,6 +86,7 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/addons/{addon}", s.consoleAddonDetail)
 		r.Get("/console/addons/{addon}/logs/stream", s.consoleAddonLogsStream)
 		r.Get("/console/addons/{addon}/stats/stream", s.consoleAddonStatsStream)
+		r.Post("/console/addons/{addon}/expose", s.consoleAddonExpose)
 	})
 
 	// Admin-only pages.

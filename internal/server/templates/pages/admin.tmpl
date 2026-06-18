@@ -39,6 +39,12 @@
     <div><dt>构建缓存</dt><dd>{{.BuildCache}}</dd></div>
     <div><dt>合计</dt><dd>{{.Total}}</dd></div>
   </dl>
+  {{with $.DiskFree}}
+  <dl class="kv wide" style="margin-top:10px">
+    <div><dt>磁盘已用</dt><dd>{{.Used}} / {{.Total}}</dd></div>
+    <div><dt>磁盘剩余</dt><dd>{{.Free}}</dd></div>
+  </dl>
+  {{end}}
   <p class="muted" style="margin-top:12px"><a href="/console/admin/images">→ 本地镜像管理</a></p>
 </section>
 {{end}}
