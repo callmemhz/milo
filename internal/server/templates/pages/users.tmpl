@@ -4,14 +4,15 @@
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
 {{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
 
-<section class="card">
+<section class="card pad0">
   <table class="tbl">
-    <thead><tr><th>用户名</th><th>角色</th><th>密码</th><th>创建</th><th>操作</th></tr></thead>
+    <thead><tr><th>用户名</th><th>角色</th><th>状态</th><th>密码</th><th>创建</th><th>操作</th></tr></thead>
     <tbody>
     {{range .Users}}
       <tr>
         <td class="mono">{{.Username}}</td>
         <td>{{if .IsAdmin}}<span class="badge admin">admin</span>{{else}}user{{end}}</td>
+        <td>{{if .Frozen}}<span class="no ico">✕ 已冻结</span>{{else}}<span class="yes ico">● 正常</span>{{end}}</td>
         <td>{{if .HasPassword}}<span class="ok-dot">已设</span>{{else}}<span class="muted">未设</span>{{end}}</td>
         <td class="muted">{{.Created}}</td>
         <td class="row-actions">
@@ -22,6 +23,17 @@
             <button type="submit">重置密码</button>
           </form>
           {{if ne .Username $.Self}}
+          <form method="post" action="/console/users/freeze" class="inline">
+            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
+            <input type="hidden" name="username" value="{{.Username}}">
+            {{if .Frozen}}
+            <input type="hidden" name="frozen" value="false">
+            <button type="submit" class="btn on">解冻</button>
+            {{else}}
+            <input type="hidden" name="frozen" value="true">
+            <button type="submit" class="btn" onclick="return confirm('冻结 {{.Username}}? 账号保留但将无法登录/调用')">冻结</button>
+            {{end}}
+          </form>
           <form method="post" action="/console/users/delete" class="inline"
                 onsubmit="return confirm('删除用户 {{.Username}}?')">
             <input type="hidden" name="_csrf" value="{{$.CSRF}}">

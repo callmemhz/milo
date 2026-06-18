@@ -26,3 +26,27 @@ func (s *Store) GetUserPasswordHash(ctx context.Context, userID int64) (string, 
 	}
 	return h.String, nil
 }
+
+// SetUserFrozen freezes (frozen=true) or unfreezes a user. A frozen account is
+// retained but cannot authenticate (login, session, or API token).
+func (s *Store) SetUserFrozen(ctx context.Context, userID int64, frozen bool) error {
+	if frozen {
+		_, err := s.DB.ExecContext(ctx,
+			`UPDATE users SET frozen_at = ? WHERE id = ? AND deleted_at IS NULL`,
+			time.Now().UTC(), userID)
+		return err
+	}
+	_, err := s.DB.ExecContext(ctx, `UPDATE users SET frozen_at = NULL WHERE id = ?`, userID)
+	return err
+}
+
+// IsUserFrozen reports whether the user is currently frozen.
+func (s *Store) IsUserFrozen(ctx context.Context, userID int64) (bool, error) {
+	var t sql.NullTime
+	err := s.DB.QueryRowContext(ctx,
+		`SELECT frozen_at FROM users WHERE id = ? AND deleted_at IS NULL`, userID).Scan(&t)
+	if err != nil {
+		return false, err
+	}
+	return t.Valid, nil
+}

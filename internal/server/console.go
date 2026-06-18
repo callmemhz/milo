@@ -100,6 +100,7 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/users", s.consoleUsers)
 		r.Post("/console/users/create", s.consoleUserCreate)
 		r.Post("/console/users/password", s.consoleUserSetPassword)
+		r.Post("/console/users/freeze", s.consoleUserFreeze)
 		r.Post("/console/users/delete", s.consoleUserDelete)
 	})
 
@@ -152,6 +153,12 @@ func (s *Server) resolveSession(w http.ResponseWriter, r *http.Request) (*auth.I
 	}
 	u, err := s.Store.GetUserByID(r.Context(), sess.UserID)
 	if err != nil {
+		return nil, false
+	}
+	// A frozen account cannot use the console; drop all its sessions.
+	if frozen, _ := s.Store.IsUserFrozen(r.Context(), u.ID); frozen {
+		_ = s.Store.DeleteUserSessions(r.Context(), u.ID)
+		s.clearSessionCookie(w)
 		return nil, false
 	}
 	// Sliding expiry (best-effort).

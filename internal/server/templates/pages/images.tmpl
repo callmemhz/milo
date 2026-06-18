@@ -3,34 +3,51 @@
 <h1>本地镜像</h1>
 {{if .Flash}}<p class="flash">{{.Flash}}</p>{{end}}
 {{if .Error}}<p class="error left">{{.Error}}</p>{{end}}
-<section class="card pad0">
-  <table class="tbl">
-    <thead><tr><th>标签</th><th>ID</th><th>大小</th><th>使用</th><th class="ta-r">操作</th></tr></thead>
-    <tbody>
-    {{range .Images}}
-      <tr>
-        <td class="mono">{{.Tags}}</td>
-        <td class="mono muted">{{.Short}}</td>
-        <td>{{.Size}}</td>
-        <td>
-          {{if .InUse}}<span class="tag use" title="{{.UsedBy}}">使用中</span> <span class="muted">{{.UsedBy}}</span>
-          {{else}}<span class="tag free">未使用</span>{{end}}
-        </td>
-        <td class="ta-r">
-          <form method="post" action="/console/admin/images/delete" class="img-del"
-                onsubmit="return confirm('删除镜像 {{.Tags}}?')">
-            <input type="hidden" name="_csrf" value="{{$.CSRF}}">
-            <input type="hidden" name="id" value="{{.ID}}">
-            <label class="chk small"><input type="checkbox" name="force"> 强制</label>
-            <button type="submit" class="btn danger">删除</button>
-          </form>
-        </td>
-      </tr>
-    {{else}}
-      <tr><td colspan="5" class="muted">无本地镜像</td></tr>
-    {{end}}
-    </tbody>
-  </table>
-</section>
-<p class="muted">「使用中」表示有容器（运行或停止）引用该镜像；删除被占用的镜像需勾选「强制」。</p>
+
+<form method="post" action="/console/admin/images/delete" id="img-form"
+      onsubmit="return confirmBatch()">
+  <input type="hidden" name="_csrf" value="{{.CSRF}}">
+  <div class="bulkbar">
+    <label class="chk small"><input type="checkbox" id="sel-all" onclick="toggleAll(this)"> 全选</label>
+    <label class="chk small"><input type="checkbox" name="force"> 强制删除（含被占用）</label>
+    <button type="submit" class="btn danger" id="bulk-del" disabled>删除所选 (<span id="cnt">0</span>)</button>
+  </div>
+  <section class="card pad0">
+    <table class="tbl">
+      <thead><tr><th class="ta-c">选</th><th>标签</th><th>ID</th><th>大小</th><th>使用</th></tr></thead>
+      <tbody>
+      {{range .Images}}
+        <tr>
+          <td class="ta-c"><input type="checkbox" class="row-ck" name="ids" value="{{.ID}}" onclick="updateCount()"></td>
+          <td class="mono">{{.Tags}}</td>
+          <td class="mono muted">{{.Short}}</td>
+          <td>{{.Size}}</td>
+          <td>
+            {{if .InUse}}<span class="tag use" title="{{.UsedBy}}">使用中</span> <span class="muted">{{.UsedBy}}</span>
+            {{else}}<span class="tag free">未使用</span>{{end}}
+          </td>
+        </tr>
+      {{else}}
+        <tr><td colspan="5" class="muted">无本地镜像</td></tr>
+      {{end}}
+      </tbody>
+    </table>
+  </section>
+</form>
+<p class="muted">勾选多个镜像后「删除所选」批量回收；被容器（运行或停止）占用的镜像需勾「强制删除」。</p>
+
+<script>
+function rows(){return document.querySelectorAll('.row-ck')}
+function updateCount(){
+  var n=0; rows().forEach(function(c){if(c.checked)n++});
+  document.getElementById('cnt').textContent=n;
+  document.getElementById('bulk-del').disabled = n===0;
+  var all=document.getElementById('sel-all'); all.checked = n>0 && n===rows().length;
+}
+function toggleAll(src){rows().forEach(function(c){c.checked=src.checked}); updateCount()}
+function confirmBatch(){
+  var n=document.getElementById('cnt').textContent;
+  return confirm('删除选中的 '+n+' 个镜像?');
+}
+</script>
 {{end}}
