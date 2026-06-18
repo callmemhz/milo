@@ -14,6 +14,9 @@ type Server struct {
 	GHCRUser   string `envconfig:"GHCR_USER"`
 	GHCRToken  string `envconfig:"GHCR_TOKEN"`
 	Version    string `envconfig:"MILO_VERSION" default:"dev"`
+	// CookieSecure marks console session cookies Secure. Enable in production
+	// (served over TLS via Caddy); leave off for local plain-HTTP testing.
+	CookieSecure bool `envconfig:"COOKIE_SECURE" default:"false"`
 }
 
 func Load() (Server, error) {

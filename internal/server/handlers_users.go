@@ -19,6 +19,48 @@ func (s *Server) registerUsersRoutes(r chi.Router) {
 	r.Post("/v1/users/{username}/tokens", s.handleCreateUserToken)
 	r.Get("/v1/users/{username}/tokens", s.handleListUserTokens)
 	r.Delete("/v1/users/{username}/tokens/{id}", s.handleRevokeUserToken)
+	r.Post("/v1/users/{username}/password", s.handleSetUserPassword)
+}
+
+// handleSetUserPassword sets a web-console login password. Admins may set any
+// user's password; a non-admin may only set their own.
+func (s *Server) handleSetUserPassword(w http.ResponseWriter, r *http.Request) {
+	id, _ := auth.IdentityFromContext(r.Context())
+	if id == nil || id.User == nil {
+		writeError(w, api.New(api.ErrUnauthorized, "no user"))
+		return
+	}
+	username := chi.URLParam(r, "username")
+	if !id.User.IsAdmin && username != id.User.Username {
+		writeError(w, api.New(api.ErrForbidden, "can only set your own password"))
+		return
+	}
+	var req struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, api.New(api.ErrInvalid, "bad json"))
+		return
+	}
+	if len(req.Password) < 8 {
+		writeError(w, api.New(api.ErrInvalid, "password must be at least 8 characters"))
+		return
+	}
+	u, err := s.Store.GetUserByUsername(r.Context(), username)
+	if err != nil {
+		writeError(w, api.New(api.ErrNotFound, "user not found"))
+		return
+	}
+	hash, err := auth.HashPassword(req.Password)
+	if err != nil {
+		writeError(w, api.New(api.ErrInternal, "hash failed"))
+		return
+	}
+	if err := s.Store.SetUserPassword(r.Context(), u.ID, hash); err != nil {
+		writeError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
