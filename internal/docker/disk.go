@@ -81,6 +81,36 @@ func (c *Client) ImageRemove(ctx context.Context, id string, force bool) error {
 	return err
 }
 
+// VolumeInfo summarises a docker named volume.
+type VolumeInfo struct {
+	Name     string
+	Size     int64 // bytes, -1 if not computed
+	RefCount int64 // containers referencing it (0 = unused)
+}
+
+// VolumeList returns all named volumes with size + ref count (via DiskUsage,
+// which computes both in one call).
+func (c *Client) VolumeList(ctx context.Context) ([]VolumeInfo, error) {
+	du, err := c.cli.DiskUsage(ctx, types.DiskUsageOptions{})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]VolumeInfo, 0, len(du.Volumes))
+	for _, v := range du.Volumes {
+		vi := VolumeInfo{Name: v.Name, Size: -1}
+		if v.UsageData != nil {
+			vi.Size = v.UsageData.Size
+			vi.RefCount = v.UsageData.RefCount
+		}
+		out = append(out, vi)
+	}
+	return out, nil
+}
+
+func (c *Client) VolumeRemove(ctx context.Context, name string, force bool) error {
+	return c.cli.VolumeRemove(ctx, name, force)
+}
+
 // ImageUsage maps image ID -> display names of containers using it (running or
 // stopped). Used to show which images are in use and by which instance.
 func (c *Client) ImageUsage(ctx context.Context) (map[string][]string, error) {

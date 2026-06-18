@@ -31,6 +31,8 @@ type ContainerRuntime interface {
 	ImageList(ctx context.Context) ([]docker.Image, error)
 	ImageRemove(ctx context.Context, id string, force bool) error
 	ImageUsage(ctx context.Context) (map[string][]string, error)
+	VolumeList(ctx context.Context) ([]docker.VolumeInfo, error)
+	VolumeRemove(ctx context.Context, name string, force bool) error
 }
 
 const (
@@ -97,6 +99,8 @@ func (s *Server) registerConsoleRoutes(r chi.Router) {
 		r.Get("/console/admin/instances", s.consoleAllInstances)
 		r.Get("/console/admin/images", s.consoleImages)
 		r.Post("/console/admin/images/delete", s.consoleImageDelete)
+		r.Get("/console/admin/volumes", s.consoleVolumes)
+		r.Post("/console/admin/volumes/delete", s.consoleVolumeDelete)
 		r.Get("/console/users", s.consoleUsers)
 		r.Post("/console/users/create", s.consoleUserCreate)
 		r.Post("/console/users/password", s.consoleUserSetPassword)
