@@ -20,12 +20,9 @@
 {{with .Load}}
 <section class="card">
   <h2>负载</h2>
-  <dl class="kv wide">
-    <div><dt>Load (1m)</dt><dd>{{.L1}}</dd></div>
-    <div><dt>Load (5m)</dt><dd>{{.L5}}</dd></div>
-    <div><dt>Load (15m)</dt><dd>{{.L15}}</dd></div>
-    <div><dt>内存使用</dt><dd>{{.MemUsed}} / {{.MemTotal}}</dd></div>
-  </dl>
+  {{meter "CPU" .LoadPct .LoadNum}}
+  {{if .MemNum}}{{meter "内存" .MemPct .MemNum}}{{end}}
+  <p class="muted" style="margin-top:8px;font-size:12px">CPU 进度条 = 1 分钟负载 / 核数；负载数字为 1m / 5m / 15m。</p>
 </section>
 {{end}}
 
@@ -40,10 +37,7 @@
     <div><dt>合计</dt><dd>{{.Total}}</dd></div>
   </dl>
   {{with $.DiskFree}}
-  <dl class="kv wide" style="margin-top:10px">
-    <div><dt>磁盘已用</dt><dd>{{.Used}} / {{.Total}}</dd></div>
-    <div><dt>磁盘剩余</dt><dd>{{.Free}}</dd></div>
-  </dl>
+  <div style="margin-top:12px">{{meter "磁盘" .DiskPct .DiskNum}}</div>
   {{end}}
   <p class="muted" style="margin-top:12px"><a href="/console/admin/images">→ 本地镜像管理</a></p>
 </section>

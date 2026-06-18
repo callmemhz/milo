@@ -55,6 +55,7 @@ func (s *Server) initConsole() {
 		"humanDuration": humanDuration,
 		"humanBytes":    humanBytes,
 		"pct":           func(f float64) string { return fmt.Sprintf("%.1f", f) },
+		"meter":         meterHTML,
 	}
 	pages, _ := fs.Glob(templateFS, "templates/pages/*.tmpl")
 	s.tmpls = map[string]*template.Template{}
@@ -266,6 +267,27 @@ func humanDuration(d time.Duration) string {
 		return fmt.Sprintf("%dh%dm", int(d.Hours()), int(d.Minutes())%60)
 	}
 	return fmt.Sprintf("%dd%dh", int(d.Hours())/24, int(d.Hours())%24)
+}
+
+// meterHTML renders a labelled percentage/ratio bar. pct drives both the fill
+// width (clamped 0..100) and the color band. num is the human text on the right.
+func meterHTML(label string, pct float64, num string) template.HTML {
+	w := pct
+	if w < 0 {
+		w = 0
+	}
+	if w > 100 {
+		w = 100
+	}
+	lvl := "ok"
+	if pct >= 85 {
+		lvl = "bad"
+	} else if pct >= 60 {
+		lvl = "warn"
+	}
+	return template.HTML(fmt.Sprintf(
+		`<div class="meter"><span class="mlbl">%s</span><span class="bar %s"><i style="width:%.0f%%"></i></span><span class="num">%s</span></div>`,
+		template.HTMLEscapeString(label), lvl, w, template.HTMLEscapeString(num)))
 }
 
 func humanBytes(b uint64) string {
